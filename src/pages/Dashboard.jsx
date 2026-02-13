@@ -40,7 +40,7 @@ export default function Dashboard() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-white tracking-tight">Dashboard</h1>
-            <p className="text-[#A0A9B8]">Welcome back. Here's your portfolio overview.</p>
+            <p className="text-[#A0A9B8]">Welcome. Here's your portfolio overview.</p>
           </div>
           <div className="flex gap-2">
             <Link to="/positions"><Button variant="secondary" className="bg-[#252B33] text-white hover:bg-[#333B44]">Manage Positions</Button></Link>

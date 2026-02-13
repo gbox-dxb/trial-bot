@@ -1,0 +1,123 @@
+import CryptoJS from 'crypto-js';
+
+/**
+ * API Proxy Service
+ * 
+ * In a standard production environment, this service would delegate to a backend endpoint
+ * (e.g., POST /api/proxy/binance) to handle sensitive signing and avoid CORS.
+ * 
+ * ENVIRONMENT ADAPTATION:
+ * Since this is a STRICTLY FRONTEND-ONLY environment, we cannot deploy a backend server.
+ * To fulfill the functional requirements (Solving CORS, Centralized Signing), we simulate
+ * the backend logic within this module and use a public CORS proxy service.
+ * 
+ * SECURITY NOTE:
+ * - In this sandbox, secrets are processed client-side (simulated backend).
+ * - Requests are routed through 'https://corsproxy.io/?' to bypass browser CORS restrictions.
+ * - This configuration is for development/sandbox use. Production apps should use a real backend.
+ */
+
+const CORS_PROXY = 'https://corsproxy.io/?';
+
+const BASE_URLS = {
+  binance: {
+    spot: 'https://api.binance.com',
+    futures: 'https://fapi.binance.com'
+  },
+  mexc: {
+    spot: 'https://api.mexc.com',
+    futures: 'https://contract.mexc.com'
+  }
+};
+
+// Helper: Standard HMAC-SHA256 Signing
+const generateSignature = (queryString, apiSecret) => {
+  return CryptoJS.HmacSHA256(queryString, apiSecret).toString(CryptoJS.enc.Hex);
+};
+
+// Internal Simulator for "Backend" Logic
+const executeSimulatedBackendRequest = async (exchange, endpoint, method, params, headers, credentials) => {
+  const { apiKey, apiSecret, marketType } = credentials;
+  
+  // 1. Resolve Base URL
+  const typeKey = (marketType && marketType.toLowerCase().includes('futures')) ? 'futures' : 'spot';
+  const baseUrl = BASE_URLS[exchange][typeKey];
+  
+  if (!baseUrl) {
+    throw new Error(`Configuration missing for ${exchange} ${typeKey}`);
+  }
+
+  // 2. Add Server-Side Timestamp (Simulated)
+  const timestamp = Date.now();
+  const requestParams = { ...params, timestamp };
+  
+  // 3. Generate Query String & Signature
+  // Note: Most exchanges require query string sorting, URLSearchParams handles standard encoding.
+  const queryString = new URLSearchParams(requestParams).toString();
+  const signature = generateSignature(queryString, apiSecret);
+  
+  // 4. Construct Final URL
+  // Both Binance and MEXC generally accept the signature in the query string 
+  // even for POST requests if the body isn't JSON payload based (or hybrid).
+  // For this implementation, we append to URL to match standard Connector patterns.
+  const signedQuery = `${queryString}&signature=${signature}`;
+  const targetUrl = `${baseUrl}${endpoint}?${signedQuery}`;
+  
+  // 5. Prepare Headers
+  const requestHeaders = {
+    'Content-Type': 'application/json',
+    ...headers
+  };
+
+  // Add Exchange Specific Auth Headers
+  if (exchange === 'binance') {
+    requestHeaders['X-MBX-APIKEY'] = apiKey;
+  } else if (exchange === 'mexc') {
+    requestHeaders['X-MEXC-APIKEY'] = apiKey;
+  }
+
+  // 6. Execute Request via CORS Proxy
+  // We double-encode the target URL to ensure special characters survive the proxy transit
+  const proxyUrl = `${CORS_PROXY}${encodeURIComponent(targetUrl)}`;
+
+  try {
+    const response = await fetch(proxyUrl, {
+      method: method,
+      headers: requestHeaders
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      const errorMessage = data.msg || data.message || (data.code ? `API Error ${data.code}` : 'Unknown API Error');
+      throw new Error(errorMessage);
+    }
+
+    return data;
+  } catch (error) {
+    // Better error handling for network failures
+    console.error('Proxy Request Failed:', error);
+    throw error;
+  }
+};
+
+export const apiProxy = {
+  /**
+   * Main entry point for API requests.
+   * Delegates to the simulated backend processor.
+   * 
+   * @param {string} exchange - 'binance' or 'mexc'
+   * @param {string} endpoint - API path (e.g. '/api/v3/order')
+   * @param {string} method - HTTP Method
+   * @param {object} params - Request parameters
+   * @param {object} headers - Custom headers
+   * @param {object} credentials - { apiKey, apiSecret, marketType }
+   */
+  async request(exchange, endpoint, method = 'GET', params = {}, headers = {}, credentials = null) {
+    if (!credentials || !credentials.apiKey || !credentials.apiSecret) {
+      throw new Error('Missing API credentials for request');
+    }
+    
+    return executeSimulatedBackendRequest(exchange, endpoint, method, params, headers, credentials);
+  }
+};

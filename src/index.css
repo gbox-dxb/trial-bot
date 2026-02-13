@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Crypto Trading Dark Theme */
+  --bg-primary: #0F1419;
+  --bg-secondary: #1A1A1A;
+  --bg-tertiary: #252B33;
+  --text-primary: #FFFFFF;
+  --text-secondary: #A0A9B8;
+  --border-color: rgb(42 42 42);
+  --primary-accent: #00D9FF;
+  --secondary-accent: #9D4EDD;
+  --accent-blue: #00D9FF;
+  --accent-red: #FF3B30;
+  --accent-purple: #9D4EDD;
+  --accent-green: #00FF41;
+  --accent-orange: #FF6B35;
+  --card-bg: #1A1A1A;
+  --chart-bg: #0F1419;
+  --success: #00FF41;
+  --danger: #FF3B30;
+
+  /* Backward Compatibility */
+  --bg: #0F1419;
+  --surface: #1A1A1A;
+  --surface-hover: #252B33;
+  --text: #FFFFFF;
+  --muted: #A0A9B8;
+  --border: rgb(42 42 42);
+  --primary: #00D9FF;
+  --primary-contrast: #0F1419;
+  --input-bg: #1A1A1A;
+  --sidebar-bg: #0F1419;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-accent);
+}
+
+/* Custom Utilities */
+@layer utilities {
+  .neon-text {
+    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+  }
+  
+  .neon-text-cyan {
+    color: #00D9FF;
+    text-shadow: 0 0 10px rgba(0, 217, 255, 0.8), 0 0 20px rgba(0, 217, 255, 0.5);
+  }
+  
+  .neon-text-green {
+    color: #00FF41;
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.8), 0 0 20px rgba(0, 255, 65, 0.5);
+  }
+  
+  .glow-hover:hover {
+    box-shadow: 0 0 15px currentColor, 0 0 30px currentColor;
+    transition: box-shadow 0.3s ease;
+  }
+}
+
+/* Theme Utility Classes */
+.bg-theme-main { background-color: var(--bg-primary); }
+.bg-theme-surface { background-color: var(--bg-secondary); }
+.bg-theme-card { background-color: var(--card-bg); }
+.text-theme-primary { color: var(--text-primary); }
+.text-theme-secondary { color: var(--text-secondary); }
+.border-theme { border-color: var(--border-color); }
+
+/* Animation Utilities */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Code Editor */
+.code-editor-line {
+  font-family: monospace;
+}
+
+/* Custom Scrollbar for Tables */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-tertiary) var(--bg-primary);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-accent);
+}

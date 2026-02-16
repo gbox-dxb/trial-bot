@@ -11,20 +11,21 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const initializeApp = useCallback(() => {
-    const storedUser = storage.getUser();
-    
+    let storedUser = storage.getUser(); // Get user from "database"
+    const sessionToken = storage.getSession(); // Get active session token
+
     if (!storedUser) {
-      // Initialize demo user and data
+      // Initialize demo user and data (Database Seeding)
       const demoUser = {
         email: 'demo@mexc.com',
         passwordHash: CryptoJS.SHA256('demo123').toString(),
         createdAt: Date.now()
       };
-      
+
       storage.setUser(demoUser);
-      
+      storedUser = demoUser; // Update local ref
+
       // Initialize a robust demo account with correct balance
-      // We use keyManagement to ensure it's stored in the 'demoAccounts' or proper format
       const initializedDemoAccount = {
         id: 'demo-default-1',
         name: 'MEXC Demo Account',
@@ -43,14 +44,21 @@ export function AuthProvider({ children }) {
       if (existingDemos.length === 0) {
         keyManagement.saveDemoAccount(initializedDemoAccount);
       }
-      
+
       // Also set other mock data
       storage.setBots(demoBots);
       storage.setPositions(demoPositions);
       storage.setTrades(demoTrades);
       storage.setPnLHistory(demoPnLHistory);
     }
-    
+
+    // Check Session: Only auto-login if we have a valid session token
+    if (sessionToken && storedUser) {
+      setUser(storedUser);
+    } else {
+      setUser(null); // No session, user must login
+    }
+
     setLoading(false);
   }, []);
 
@@ -61,23 +69,28 @@ export function AuthProvider({ children }) {
   const login = (email, password) => {
     const storedUser = storage.getUser();
     const passwordHash = CryptoJS.SHA256(password).toString();
-    
+
     if (storedUser && storedUser.email === email && storedUser.passwordHash === passwordHash) {
+      // Successful Login
       setUser(storedUser);
+      // Create and save session token
+      const token = CryptoJS.SHA256(Date.now().toString() + email).toString();
+      storage.setSession(token);
       return { success: true };
     }
-    
+
     return { success: false, error: 'Invalid credentials' };
   };
 
   const logout = () => {
     setUser(null);
+    storage.clearSession(); // Destroy session
   };
 
   const updatePassword = (currentPassword, newPassword) => {
     const storedUser = storage.getUser();
     const currentHash = CryptoJS.SHA256(currentPassword).toString();
-    
+
     if (storedUser.passwordHash === currentHash) {
       const newHash = CryptoJS.SHA256(newPassword).toString();
       storedUser.passwordHash = newHash;
@@ -85,7 +98,7 @@ export function AuthProvider({ children }) {
       setUser(storedUser);
       return { success: true };
     }
-    
+
     return { success: false, error: 'Current password is incorrect' };
   };
 

@@ -83,7 +83,7 @@ export default function ActiveOrdersTable({ orders, prices, onEdit, onClosePosit
                       Position: ${order.margin.toLocaleString()}
                     </span>
                     <span className="text-[10px] text-slate-500">
-                      Margin used: ${requiredMargin}
+                      Margin used: ${requiredMargin.toFixed(2)}
                     </span>
                   </div>
                 </td>

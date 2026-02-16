@@ -105,7 +105,7 @@ export default function CandleStrike() {
         <meta name="description" content="Automated surf strategy trading based on wave detection" />
       </Helmet>
 
-      <div className="h-[calc(100vh-6rem)] flex flex-col p-4 lg:p-6 overflow-hidden bg-[#0F1419]">
+      <div className="flex flex-col p-4 lg:p-6 overflow-hidden bg-[#0F1419]">
         <Tabs defaultValue="green" className="w-full h-full">
 
           <TabsList className="flex items-end justify-end w-full bg-slate-800/50 p-1 mb-4 rounded-xl ms-auto border border-custom">

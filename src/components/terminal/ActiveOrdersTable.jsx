@@ -22,7 +22,7 @@ export default function ActiveOrdersTable({ orders, prices, onEdit, onClosePosit
         <thead className="bg-slate-900/50 text-slate-400 text-xs uppercase font-medium">
           <tr>
             <th className="px-4 py-3 rounded-tl-lg">Source / Pair</th>
-            <th className="px-4 py-3">Position</th>
+            <th className="px-4 py-3">Position / Size</th>
             <th className="px-4 py-3">Prices</th>
             <th className="px-4 py-3">Status</th>
             <th className="px-4 py-3 hidden md:table-cell">Progress</th>
@@ -80,7 +80,7 @@ export default function ActiveOrdersTable({ orders, prices, onEdit, onClosePosit
                 <td className="px-4 py-4">
                   <div className="flex flex-col">
                     <span className="font-mono font-medium text-slate-200">
-                      Position: ${order.margin.toLocaleString()}
+                      ${order.margin.toFixed(2).toLocaleString()}
                     </span>
                     <span className="text-[10px] text-slate-500">
                       Margin used: ${requiredMargin.toFixed(2)}

@@ -294,77 +294,83 @@ export default function Terminal() {
         <meta name="description" content="Professional trading terminal with multi-pair order execution" />
       </Helmet>
 
-      <div className="flex-1 flex flex-col lg:flex-row gap-4 p-4 min-h-0">
-        <div className="flex-1 flex flex-col gap-4 min-h-0">
-          <div className="flex-[0.6] bg-slate-900/30 rounded-xl overflow-hidden shadow-xl border border-custom relative min-h-[300px]">
-            <div className="absolute top-4 left-4 z-10 bg-slate-900/80 backdrop-blur px-3 py-1 rounded-md border border-custom">
-              <span className="text-slate-400 text-xs mr-2">Market Price</span>
-              <span className="text-white font-bold font-mono">
-                ${pairs[0] && prices[pairs[0]] ? prices[pairs[0]].toFixed(2) : '---'}
-              </span>
+      <div className="flex-1 flex flex-col gap-4 p-4 min-h-0 overflow-y-auto">
+        {/* Top Section: Charts & Order Form */}
+        <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-[500px]">
+          {/* Left Side: Chart & Templates */}
+          <div className="flex-1 flex flex-col gap-4 min-h-0">
+            <div className="flex-1 bg-slate-900/30 rounded-xl overflow-hidden shadow-xl border border-custom relative min-h-[300px]">
+              <div className="absolute top-4 left-4 z-10 bg-slate-900/80 backdrop-blur px-3 py-1 rounded-md border border-custom">
+                <span className="text-slate-400 text-xs mr-2">Market Price</span>
+                <span className="text-white font-bold font-mono">
+                  ${pairs[0] && prices[pairs[0]] ? prices[pairs[0]].toFixed(2) : '---'}
+                </span>
+              </div>
+              <Chart
+                symbol={pairs[0] || 'BTCUSDT'}
+                coins={pairs}
+                onRemoveCoin={(coin) => setPairs(prev => prev.filter(p => p !== coin))}
+              />
             </div>
-            <Chart
-              symbol={pairs[0] || 'BTCUSDT'}
-              coins={pairs}
-              onRemoveCoin={(coin) => setPairs(prev => prev.filter(p => p !== coin))}
-            />
+
+            <div className="flex-none h-[200px] grid grid-cols-1 md:grid-cols-2 gap-4 overflow-hidden">
+              <SavedTemplatesSection
+                onSelectTemplate={handleSelectTemplate}
+                refreshTrigger={refreshTrigger}
+              />
+              <PendingOrdersSection
+                onEditOrder={handleEditPendingOrder}
+                onExecuteOrder={handleExecutePendingOrder}
+                refreshTrigger={refreshTrigger}
+              />
+            </div>
           </div>
 
-          <div className="flex-[0.4] grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[200px] overflow-hidden">
-            <SavedTemplatesSection
-              onSelectTemplate={handleSelectTemplate}
-              refreshTrigger={refreshTrigger}
-            />
-            <PendingOrdersSection
-              onEditOrder={handleEditPendingOrder}
-              onExecuteOrder={handleExecutePendingOrder}
-              refreshTrigger={refreshTrigger}
-            />
-          </div>
-
-          {/* Active Orders Section */}
-          <div className="flex-[0.4] min-h-[200px]">
-            <ActiveOrdersSection
-              refreshTrigger={refreshTrigger}
+          {/* Right Side: Place Order Panel */}
+          <div className="w-full lg:w-[380px] xl:w-[420px] flex-none rounded-xl overflow-hidden border border-custom shadow-xl bg-slate-900/50 flex flex-col h-full">
+            <RightSidePanel
+              accountId={accountId} setAccountId={handleAccountChange}
+              pairs={pairs} setPairs={setPairs}
+              direction={direction} setDirection={setDirection}
+              directionApplyAll={directionApplyAll} setDirectionApplyAll={setDirectionApplyAll}
+              perCoinDirection={perCoinDirection} setPerCoinDirection={setPerCoinDirection}
+              orderType={orderType} setOrderType={setOrderType}
+              entryPrice={entryPrice} setEntryPrice={setEntryPrice}
+              priceApplyAll={priceApplyAll} setPriceApplyAll={setPriceApplyAll}
+              perCoinPrice={perCoinPrice} setPerCoinPrice={setPerCoinPrice}
+              leverage={leverage} setLeverage={setLeverage}
+              leverageApplyAll={leverageApplyAll} setLeverageApplyAll={setLeverageApplyAll}
+              perCoinLeverage={perCoinLeverage} setPerCoinLeverage={setPerCoinLeverage}
+              maxLeverage={maxLeverage}
+              baseOrderSize={baseOrderSize} setBaseOrderSize={setBaseOrderSize}
+              sizeMode={sizeMode} setSizeMode={setSizeMode}
+              customAllocation={customAllocation} setCustomAllocation={setCustomAllocation}
+              perCoinSize={perCoinSize} setPerCoinSize={setPerCoinSize}
+              availableBalance={availableBalance}
+              requiredMargin={requiredMargin}
+              takeProfitEnabled={takeProfitEnabled} setTakeProfitEnabled={setTakeProfitEnabled}
+              stopLossEnabled={stopLossEnabled} setStopLossEnabled={setStopLossEnabled}
+              takeProfitMode={takeProfitMode} setTakeProfitMode={setTakeProfitMode}
+              stopLossMode={stopLossMode} setStopLossMode={setStopLossMode}
+              takeProfit={takeProfit} setTakeProfit={setTakeProfit}
+              stopLoss={stopLoss} setStopLoss={setStopLoss}
+              applyTPToAll={applyTPToAll} setApplyTPToAll={setApplyTPToAll}
+              applySLToAll={applySLToAll} setApplySLToAll={setApplySLToAll}
+              perCoinTP={perCoinTP} setPerCoinTP={setPerCoinTP}
+              perCoinSL={perCoinSL} setPerCoinSL={setPerCoinSL}
+              onSaveTemplate={() => setShowTemplateDialog(true)}
+              onSavePending={handleSavePendingOrder}
+              onPlaceOrder={handlePlaceOrder}
+              loadedTemplateId={loadedTemplateId}
             />
           </div>
         </div>
 
-        <div className="w-full lg:w-[380px] xl:w-[420px] flex-none rounded-xl overflow-hidden border border-custom shadow-xl bg-slate-900/50 flex flex-col h-full">
-          <RightSidePanel
-            accountId={accountId} setAccountId={handleAccountChange}
-            pairs={pairs} setPairs={setPairs}
-            direction={direction} setDirection={setDirection}
-            directionApplyAll={directionApplyAll} setDirectionApplyAll={setDirectionApplyAll}
-            perCoinDirection={perCoinDirection} setPerCoinDirection={setPerCoinDirection}
-            orderType={orderType} setOrderType={setOrderType}
-            entryPrice={entryPrice} setEntryPrice={setEntryPrice}
-            priceApplyAll={priceApplyAll} setPriceApplyAll={setPriceApplyAll}
-            perCoinPrice={perCoinPrice} setPerCoinPrice={setPerCoinPrice}
-            leverage={leverage} setLeverage={setLeverage}
-            leverageApplyAll={leverageApplyAll} setLeverageApplyAll={setLeverageApplyAll}
-            perCoinLeverage={perCoinLeverage} setPerCoinLeverage={setPerCoinLeverage}
-            maxLeverage={maxLeverage}
-            baseOrderSize={baseOrderSize} setBaseOrderSize={setBaseOrderSize}
-            sizeMode={sizeMode} setSizeMode={setSizeMode}
-            customAllocation={customAllocation} setCustomAllocation={setCustomAllocation}
-            perCoinSize={perCoinSize} setPerCoinSize={setPerCoinSize}
-            availableBalance={availableBalance}
-            requiredMargin={requiredMargin}
-            takeProfitEnabled={takeProfitEnabled} setTakeProfitEnabled={setTakeProfitEnabled}
-            stopLossEnabled={stopLossEnabled} setStopLossEnabled={setStopLossEnabled}
-            takeProfitMode={takeProfitMode} setTakeProfitMode={setTakeProfitMode}
-            stopLossMode={stopLossMode} setStopLossMode={setStopLossMode}
-            takeProfit={takeProfit} setTakeProfit={setTakeProfit}
-            stopLoss={stopLoss} setStopLoss={setStopLoss}
-            applyTPToAll={applyTPToAll} setApplyTPToAll={setApplyTPToAll}
-            applySLToAll={applySLToAll} setApplySLToAll={setApplySLToAll}
-            perCoinTP={perCoinTP} setPerCoinTP={setPerCoinTP}
-            perCoinSL={perCoinSL} setPerCoinSL={setPerCoinSL}
-            onSaveTemplate={() => setShowTemplateDialog(true)}
-            onSavePending={handleSavePendingOrder}
-            onPlaceOrder={handlePlaceOrder}
-            loadedTemplateId={loadedTemplateId}
+        {/* Bottom Section: Active Orders */}
+        <div className="flex-none h-[350px] min-h-[250px] w-full">
+          <ActiveOrdersSection
+            refreshTrigger={refreshTrigger}
+            className="h-full"
           />
         </div>
       </div>

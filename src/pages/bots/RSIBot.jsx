@@ -70,7 +70,7 @@ export default function RSIBot() {
 
             <div className="flex flex-col gap-4 p-4 lg:p-6 overflow-hidden bg-[#0F1419]">
 
-                <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
+                <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-[700px]">
 
                     {/* Left Column: Chart */}
                     <div className="flex-1 min-w-0 rounded-2xl overflow-hidden border border-custom shadow-xl bg-slate-900/30 backdrop-blur-sm flex flex-col">

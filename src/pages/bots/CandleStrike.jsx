@@ -39,7 +39,7 @@ const StrategyView = ({ color }) => {
   return (
     <div className="flex-1 flex flex-col gap-4 h-full min-h-0">
       {/* Main Area: Chart + Form */}
-      <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0">
+      <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-[600px]">
         {/* Chart */}
         <div className={cn(
           "flex-1 min-w-0 rounded-2xl overflow-hidden border shadow-xl backdrop-blur-sm relative flex flex-col",

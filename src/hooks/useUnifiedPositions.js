@@ -23,7 +23,7 @@ export const useUnifiedPositions = () => {
           type: isLimit ? 'LIMIT' : 'MARKET',
           symbol: order.pair || order.symbol,
           side: order.direction || order.side,
-          size: (order.margin || 0) * (order.leverage || 1), // Total position size
+          size: order.margin || 0, // Matches ActiveOrdersTable display (where margin is treated as Position Size)
           invested: order.margin || 0,
           leverage: order.leverage || 1,
           entryPrice: order.entryPrice || order.price,
@@ -145,14 +145,14 @@ export const useUnifiedPositions = () => {
 
   useEffect(() => {
     fetchPositions();
-    
+
     // Poll for updates
     const interval = setInterval(fetchPositions, 2000);
-    
+
     // Listen for storage events (cross-tab)
     const handleStorageChange = () => fetchPositions();
     window.addEventListener('storage', handleStorageChange);
-    
+
     return () => {
       clearInterval(interval);
       window.removeEventListener('storage', handleStorageChange);

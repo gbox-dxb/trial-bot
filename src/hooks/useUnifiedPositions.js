@@ -27,6 +27,8 @@ export const useUnifiedPositions = () => {
           invested: order.margin || 0,
           leverage: order.leverage || 1,
           entryPrice: order.entryPrice || order.price,
+          tp: order.tp || {},
+          sl: order.sl || {},
           status: order.status,
           timestamp: order.createdAt,
           originalData: order

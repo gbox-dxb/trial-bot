@@ -288,7 +288,8 @@ export default function UnifiedPositionsTable({ defaultFilter = 'All', showHisto
                         <th className="px-4 py-3 cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('type')}>Type <ArrowUpDown className="inline w-3 h-3 ml-1" /></th>
                         <th className="px-4 py-3">Source & Template</th>
                         <th className="px-4 py-3 text-right cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('size')}>Size <ArrowUpDown className="inline w-3 h-3 ml-1" /></th>
-                        <th className="px-4 py-3 text-right cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('entryPrice')}>Entry <ArrowUpDown className="inline w-3 h-3 ml-1" /></th>
+                        <th className="px-4 py-3">TP / SL</th>
+                        <th className="px-4 py-3 text-right">Prices</th>
                         <th className="px-4 py-3 text-right cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('pnl')}>PnL <ArrowUpDown className="inline w-3 h-3 ml-1" /></th>
                         <th className="px-4 py-3 text-center cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('status')}>Status <ArrowUpDown className="inline w-3 h-3 ml-1" /></th>
                         <th className="px-4 py-3 text-right">Actions</th>
@@ -321,11 +322,16 @@ export default function UnifiedPositionsTable({ defaultFilter = 'All', showHisto
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-2">
                                     {pos.symbol}
-                                    {pos.side !== 'Neutral' && (
-                                      <span className={`text-[10px] px-1.5 rounded font-bold ${['LONG', 'BUY', 'Long'].includes(pos.side) ? 'bg-[#00FF41]/10 text-[#00FF41]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'
-                                        }`}>
-                                        {pos.side}
-                                      </span>
+                                    {pos.side && pos.side !== 'Neutral' && (
+                                      <Badge
+                                        variant="outline"
+                                        className={`text-[10px] px-1.5 py-0 border ${['LONG', 'BUY', 'Long'].includes(pos.side)
+                                          ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+                                          : "border-red-500/30 text-red-400 bg-red-500/10"
+                                          }`}
+                                      >
+                                        {pos.side} {pos.leverage}x
+                                      </Badge>
                                     )}
                                   </div>
                                 </div>
@@ -355,11 +361,45 @@ export default function UnifiedPositionsTable({ defaultFilter = 'All', showHisto
                                 </div>
                               </td>
 
-                              <td className="px-4 py-3 text-right text-white font-mono">
-                                ${pos.size ? pos.size.toFixed(2) : '0.00'}
+                              <td className="px-4 py-3 text-right font-mono">
+                                <div className="flex flex-col">
+                                  <span className="text-white">${pos.size ? pos.size.toFixed(2) : '0.00'}</span>
+                                  <span className="text-[10px] text-slate-500">
+                                    Margin used: ${(pos.size / (pos.leverage || 1)).toFixed(2)}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex flex-col">
+                                  <span className="font-mono font-medium text-slate-200 text-xs">
+                                    {pos.tp && Object.entries(pos.tp).map(([key, value]) => (
+                                      <span key={key} className="mr-1">
+                                        {key}: {value}
+                                      </span>
+                                    ))}
+                                  </span>
+                                  <span className="text-[10px] text-slate-500">
+                                    {pos.sl && Object.entries(pos.sl).map(([key, value]) => (
+                                      <span key={key} className="mr-1">
+                                        {key}: {value}
+                                      </span>
+                                    ))}
+                                  </span>
+                                </div>
                               </td>
                               <td className="px-4 py-3 text-right font-mono text-[#A0A9B8]">
-                                {pos.entryPrice > 0 ? pos.entryPrice.toFixed(4) : '-'}
+                                <div className="flex flex-col text-xs font-mono">
+                                  <div className="flex justify-between w-24 ml-auto">
+                                    <span className="text-slate-500">Entry:</span>
+                                    <span className="text-slate-200">${pos.entryPrice > 0 ? pos.entryPrice.toFixed(2) : '-'}</span>
+                                  </div>
+                                  <div className="flex justify-between w-24 ml-auto">
+                                    <span className="text-slate-500">Curr:</span>
+                                    <span className={pnl >= 0 ? "text-emerald-400" : "text-red-400"}>
+                                      ${currentPrice ? currentPrice.toFixed(2) : '-'}
+                                    </span>
+                                  </div>
+                                </div>
                               </td>
                               <td className="px-4 py-3 text-right">
                                 {pos.type === 'MARKET' || pos.type === 'DCA' ? (

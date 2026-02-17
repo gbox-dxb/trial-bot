@@ -41,19 +41,19 @@ export default function Terminal() {
   const [maxLeverage, setMaxLeverage] = useState(125);
 
   // Investment
-  const [baseOrderSize, setBaseOrderSize] = useState(100);
+  const [baseOrderSize, setBaseOrderSize] = useState(500);
   const [sizeMode, setSizeMode] = useState('USDT');
   const [customAllocation, setCustomAllocation] = useState(false);
   const [perCoinSize, setPerCoinSize] = useState({});
   const [availableBalance, setAvailableBalance] = useState(0);
 
   // Risk Management
-  const [takeProfitEnabled, setTakeProfitEnabled] = useState(false);
-  const [stopLossEnabled, setStopLossEnabled] = useState(false);
-  const [takeProfitMode, setTakeProfitMode] = useState('PERCENT');
-  const [stopLossMode, setStopLossMode] = useState('PERCENT');
-  const [takeProfit, setTakeProfit] = useState({ percent: 5 });
-  const [stopLoss, setStopLoss] = useState({ percent: 3 });
+  const [takeProfitEnabled, setTakeProfitEnabled] = useState(true);
+  const [stopLossEnabled, setStopLossEnabled] = useState(true);
+  const [takeProfitMode, setTakeProfitMode] = useState('PROFIT');
+  const [stopLossMode, setStopLossMode] = useState('LOSS');
+  const [takeProfit, setTakeProfit] = useState({ profit: 0, percent: 10, price: 0 });
+  const [stopLoss, setStopLoss] = useState({ loss: 0, percent: 1, price: 0 });
   const [applyTPToAll, setApplyTPToAll] = useState(true);
   const [applySLToAll, setApplySLToAll] = useState(true);
   const [perCoinTP, setPerCoinTP] = useState({});

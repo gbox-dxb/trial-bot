@@ -23,6 +23,7 @@ export default function ActiveOrdersTable({ orders, prices, onEdit, onClosePosit
           <tr>
             <th className="px-4 py-3 rounded-tl-lg">Source / Pair</th>
             <th className="px-4 py-3">Position / Size</th>
+            <th className="px-4 py-3">TP / SL</th>
             <th className="px-4 py-3">Prices</th>
             <th className="px-4 py-3">Status</th>
             <th className="px-4 py-3 hidden md:table-cell">Progress</th>
@@ -84,6 +85,25 @@ export default function ActiveOrdersTable({ orders, prices, onEdit, onClosePosit
                     </span>
                     <span className="text-[10px] text-slate-500">
                       Margin used: ${requiredMargin.toFixed(2)}
+                    </span>
+                  </div>
+                </td>
+
+                <td className="px-4 py-4">
+                  <div className="flex flex-col">
+                    <span className="font-mono font-medium text-slate-200">
+                      {Object.entries(order.tp).map(([key, value]) => (
+                        <span key={key}>
+                          {key}: {value}
+                        </span>
+                      ))}
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      {Object.entries(order.sl).map(([key, value]) => (
+                        <span key={key}>
+                          {key}: {value}
+                        </span>
+                      ))}
                     </span>
                   </div>
                 </td>

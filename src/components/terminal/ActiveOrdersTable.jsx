@@ -21,7 +21,7 @@ export default function ActiveOrdersTable({ orders, prices, onEdit, onClosePosit
       <table className="w-full text-sm text-left">
         <thead className="bg-slate-900/50 text-slate-400 text-xs uppercase font-medium">
           <tr>
-            <th className="px-4 py-3 rounded-tl-lg">Source / Pair</th>
+            <th className="px-4 py-3 rounded-tl-lg">Source / Pairs</th>
             <th className="px-4 py-3">Position / Size</th>
             <th className="px-4 py-3">TP / SL</th>
             <th className="px-4 py-3">Prices</th>

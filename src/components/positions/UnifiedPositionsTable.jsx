@@ -323,15 +323,15 @@ export default function UnifiedPositionsTable({ defaultFilter = 'All', showHisto
                                   <div className="flex items-center gap-2">
                                     {pos.symbol}
                                     {pos.side && pos.side !== 'Neutral' && (
-                                      <Badge
+                                      <badge
                                         variant="outline"
-                                        className={`text-[10px] px-1.5 py-0 border ${['LONG', 'BUY', 'Long'].includes(pos.side)
+                                        className={`text-[10px] px-2 py-0.5 border rounded-[2px] whitespace-nowrap tracking-[0.15em] w-max uppercase ${['long', 'buy'].includes(pos.side)
                                           ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
-                                          : "border-red-500/30 text-red-400 bg-red-500/10"
+                                          : "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
                                           }`}
                                       >
                                         {pos.side} {pos.leverage}x
-                                      </Badge>
+                                      </badge>
                                     )}
                                   </div>
                                 </div>
@@ -360,7 +360,6 @@ export default function UnifiedPositionsTable({ defaultFilter = 'All', showHisto
                                   )}
                                 </div>
                               </td>
-
                               <td className="px-4 py-3 text-right font-mono">
                                 <div className="flex flex-col">
                                   <span className="text-white">${pos.size ? pos.size.toFixed(2) : '0.00'}</span>

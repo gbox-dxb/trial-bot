@@ -129,10 +129,10 @@ export default function CandleStrikeBotsTable({ refreshTrigger, onEdit, filterCo
                 <thead className="bg-[#0F1419]/90 text-[#A0A9B8] uppercase text-[10px] font-bold border-b border-custom sticky top-0 backdrop-blur z-10">
                     <tr>
                         <th className="px-4 py-3">Status</th>
-                        <th className="px-4 py-3">Strategy Config</th>
-                        <th className="px-4 py-3">Lev.</th>
-                        <th className="px-4 py-3">Size / Mrg</th>
+                        <th className="px-4 py-3">Source / Pairs</th>
+                        <th className="px-4 py-3">Position / Size</th>
                         <th className="px-4 py-3">TP / SL</th>
+                        <th className="px-4 py-3">Price</th>
                         <th className="px-4 py-3">Detection Progress</th>
                         <th className="px-4 py-3">Execution Lock</th>
                         <th className="px-4 py-3">Template</th>
@@ -170,11 +170,6 @@ export default function CandleStrikeBotsTable({ refreshTrigger, onEdit, filterCo
                                     </div>
                                 </td>
                                 <td className="px-4 py-3">
-                                    <Badge variant="outline" className="bg-[#252B33] text-white border-custom font-mono">
-                                        {bot.perCoinLeverage?.[bot.pair] || bot.leverage || '1'}x
-                                    </Badge>
-                                </td>
-                                <td className="px-4 py-3">
                                     <div className="flex flex-col">
                                         <span className="text-xs font-bold text-white">
                                             {bot.perCoinSize?.[bot.pair] || bot.baseOrderSize || 0} {bot.sizeMode || 'USDT'}
@@ -210,6 +205,11 @@ export default function CandleStrikeBotsTable({ refreshTrigger, onEdit, filterCo
                                         )}
                                         {!bot.takeProfitMode && !bot.stopLossMode && !bot.takeProfit && !bot.stopLoss && <span className="text-[#A0A9B8] italic">Not Set</span>}
                                     </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                    <Badge variant="outline" className="bg-[#252B33] text-white border-custom font-mono">
+                                        {bot.perCoinLeverage?.[bot.pair] || bot.leverage || '1'}x
+                                    </Badge>
                                 </td>
                                 <td className="px-4 py-3">
                                     <div className="w-32">

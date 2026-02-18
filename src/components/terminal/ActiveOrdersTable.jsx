@@ -54,7 +54,7 @@ export default function ActiveOrdersTable({ orders, prices, onEdit, onClosePosit
                   <div className="flex flex-col gap-1">
                     <span className="font-bold text-white flex items-center gap-2">
                       {order.pair}
-                      <badge className="flex items-center flex-nowrap whitespace-nowrap w-fit rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/30 px-3 py-1">
+                      <badge className="flex items-center flex-nowrap whitespace-nowrap w-fit rounded-full bg-emerald-300/20 text-emerald-400 border border-emerald-300/20 hover:bg-emerald-500/30 px-3 py-1">
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse shrink-0"></div>
                         {order.direction} {order.leverage}x
                       </badge>

@@ -19,11 +19,9 @@ export default function CandleStrikeBotsTable({ refreshTrigger, onEdit, filterCo
     }, [refreshTrigger, filterColor]);
 
     const loadBots = () => {
-        // Get all bots but only display the ones matching the current color tab (Green vs Red)
         const loadedBots = candleStrikeBotEngine.getBotsByColor(filterColor).reverse();
-        setBots(loadedBots);
-
-        setLockStatus(candleStrikeBotEngine.isSystemLocked());
+        setBots(loadedBots || []);
+        setLockStatus(candleStrikeBotEngine.isSystemLocked() || { locked: false });
     };
 
     const handleToggle = (id) => {
@@ -34,58 +32,18 @@ export default function CandleStrikeBotsTable({ refreshTrigger, onEdit, filterCo
     };
 
     const handleDelete = (bot) => {
-        // 1. Debugging Log: Inspect the full object structure
-        console.log("Delete requested for bot object:", bot);
-
-        // 2. Validate Bot Object
-        if (!bot) {
-            console.error("Delete failed: Bot object provided is null/undefined");
-            toast({
-                title: "Delete Error",
-                description: "Cannot delete: Bot data is missing.",
-                variant: "destructive"
-            });
-            return;
-        }
-
-        // 3. Robust ID Extraction
+        if (!bot) return;
         const botId = bot.id || bot._id || bot.botId;
+        if (!botId) return;
 
-        if (!botId) {
-            console.error("Delete failed: No valid ID found in bot object. Object keys:", Object.keys(bot));
-            toast({
-                title: "Delete Error",
-                description: "Invalid bot ID. Cannot delete this bot.",
-                variant: "destructive"
-            });
-            return;
-        }
-
-        // 4. Call Engine Delete with validated ID
         try {
             const success = candleStrikeBotEngine.deleteBot(botId);
-
             if (success) {
-                loadBots(); // Refresh the table immediately
-                toast({
-                    title: "Bot Deleted",
-                    description: "Strategy bot removed successfully.",
-                });
-            } else {
-                console.warn(`Delete failed: Engine returned false for ID ${botId}`);
-                toast({
-                    title: "Delete Failed",
-                    description: "Could not find the specified bot in storage.",
-                    variant: "destructive"
-                });
+                loadBots();
+                toast({ title: "Bot Deleted", description: "Strategy bot removed successfully." });
             }
         } catch (error) {
-            console.error("Exception during delete:", error);
-            toast({
-                title: "Delete Error",
-                description: error.message || "An unexpected error occurred during deletion.",
-                variant: "destructive"
-            });
+            toast({ title: "Delete Error", description: error.message, variant: "destructive" });
         }
     };
 
@@ -110,7 +68,7 @@ export default function CandleStrikeBotsTable({ refreshTrigger, onEdit, filterCo
             case 'PAUSED':
                 return <Badge variant="outline" className="bg-[#252B33] text-[#A0A9B8] ring-1 ring-[#2A3038] border-0 px-2 py-0.5 font-bold">PAUSED</Badge>;
             default:
-                return <Badge variant="outline" className="bg-[#252B33] text-white border-custom">{status}</Badge>;
+                return <Badge variant="outline" className="bg-[#252B33] text-white border-custom px-2 py-0.5">{status}</Badge>;
         }
     };
 
@@ -141,13 +99,17 @@ export default function CandleStrikeBotsTable({ refreshTrigger, onEdit, filterCo
                 </thead>
                 <tbody className="divide-y divide-custom">
                     {bots.map((bot) => {
+                        const botId = bot.id || bot._id || `bot-${Math.random()}`;
                         const isPaused = bot.status === 'PAUSED';
                         const progress = typeof bot.currentConsecutiveCount === 'number' ? bot.currentConsecutiveCount : 0;
                         const target = bot.candleCount || 1;
                         const percent = Math.min(100, (progress / target) * 100);
                         const isGreen = bot.candleColor === 'GREEN';
 
-                        const botId = bot.id || bot._id || `temp-${Math.random()}`;
+                        // Safely handle numeric display to prevent crashes
+                        const marginVal = Number(bot.margin || 0);
+                        const levVal = Number(bot.leverage || 1);
+                        const requiredMargin = marginVal / levVal;
 
                         return (
                             <tr key={botId} className="hover:bg-[#252B33] transition-colors">
@@ -172,102 +134,62 @@ export default function CandleStrikeBotsTable({ refreshTrigger, onEdit, filterCo
                                 <td className="px-4 py-3">
                                     <div className="flex flex-col">
                                         <span className="font-mono font-medium text-slate-200">
-                                            $500.00
+                                            ${marginVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
                                         <span className="text-[10px] text-slate-500">
-                                            Margin used: $50.00
+                                            margin used: ${requiredMargin.toFixed(2)}
                                         </span>
                                     </div>
                                 </td>
                                 <td className="px-4 py-3">
-                                    <div className="flex flex-col gap-1 text-[10px]">
-                                        {(bot.takeProfitMode || bot.takeProfit) && (
-                                            <div className="flex justify-between w-24">
-                                                <span className="text-[#A0A9B8]">TP ({bot.takeProfitMode || 'UNK'}):</span>
-                                                <span className="text-[#00FF41] font-mono">
-                                                    {bot.takeProfitMode === 'PRICE' && `$${bot.takeProfit?.price || 0}`}
-                                                    {bot.takeProfitMode === 'PERCENT' && `${bot.takeProfit?.percent || 0}%`}
-                                                    {bot.takeProfitMode === 'PROFIT' && `$${bot.takeProfit?.profit || 0}`}
-                                                    {!bot.takeProfitMode && (bot.takeProfit?.profit || bot.takeProfit?.percent || bot.takeProfit?.price || '0')}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {(bot.stopLossMode || bot.stopLoss) && (
-                                            <div className="flex justify-between w-24">
-                                                <span className="text-[#A0A9B8]">SL ({bot.stopLossMode || 'UNK'}):</span>
-                                                <span className="text-[#FF3B30] font-mono">
-                                                    {bot.stopLossMode === 'PRICE' && `$${bot.stopLoss?.price || 0}`}
-                                                    {bot.stopLossMode === 'PERCENT' && `${bot.stopLoss?.percent || 0}%`}
-                                                    {bot.stopLossMode === 'LOSS' && `$${bot.stopLoss?.loss || 0}`}
-                                                    {!bot.stopLossMode && (bot.stopLoss?.loss || bot.stopLoss?.percent || bot.stopLoss?.price || '0')}
-                                                </span>
-                                            </div>
-                                        )}
-                                        {!bot.takeProfitMode && !bot.stopLossMode && !bot.takeProfit && !bot.stopLoss && <span className="text-[#A0A9B8] italic">Not Set</span>}
+                                    <div className="flex flex-col">
+                                        <span className="font-mono font-medium text-slate-200 text-[10px]">
+                                            TP (Profit Target): {typeof bot.tp === 'object' ? JSON.stringify(bot.tp) : (bot.tp || '0.00')}
+                                        </span>
+                                        <span className="text-[10px] text-slate-500 font-mono">
+                                            SL (Loss Target): {typeof bot.sl === 'object' ? JSON.stringify(bot.sl) : (bot.sl || '0.00')}
+                                        </span>
                                     </div>
                                 </td>
-                                <td className="px-4 py-3">
-                                    <Badge variant="outline" className="bg-[#252B33] text-white border-custom font-mono">
-                                        {bot.perCoinLeverage?.[bot.pair] || bot.leverage || '1'}x
-                                    </Badge>
+                                <td className="px-4 py-3 text-slate-200 font-mono">
+                                    ${(Number(bot.entryPrice) || 0).toFixed(2)}
                                 </td>
                                 <td className="px-4 py-3">
-                                    <div className="w-32">
-                                        <div className="flex justify-between text-[10px] mb-1">
-                                            <span className="text-[#A0A9B8]">Match ({isGreen ? 'GREEN' : 'RED'})</span>
-                                            <span className={cn("font-bold", isGreen ? "text-[#00FF41]" : "text-[#FF3B30]")}>
-                                                {progress}/{target}
-                                            </span>
-                                        </div>
-                                        <div className="h-1.5 w-full bg-[#0F1419] rounded-full overflow-hidden border border-custom">
+                                    <div className="flex flex-col gap-1 w-24">
+                                        <div className="h-1.5 w-full bg-[#0F1419] rounded-full overflow-hidden">
                                             <div
-                                                className={cn("h-full transition-all duration-300 ease-out", isGreen ? "bg-[#00FF41] shadow-glow-green" : "bg-[#FF3B30] shadow-glow-orange")}
+                                                className={cn("h-full transition-all duration-500", isGreen ? "bg-[#00FF41]" : "bg-[#FF3B30]")}
                                                 style={{ width: `${percent}%` }}
                                             />
                                         </div>
+                                        <span className="text-[9px] text-[#A0A9B8] font-bold uppercase">{progress}/{target} Candles</span>
                                     </div>
                                 </td>
                                 <td className="px-4 py-3">
-                                    {lockStatus.locked ? (
-                                        <div className="flex items-center gap-2 text-xs text-[#FF6B35] animate-pulse font-bold">
-                                            <Lock className="w-3 h-3" />
-                                            <span className="font-mono">{formatCountdown(lockStatus.remaining)}</span>
-                                            {lockStatus.executingColor && (
-                                                <span className="text-[9px] opacity-70">
-                                                    ({lockStatus.executingColor === 'GREEN' ? 'Green' : 'Red'} Executed)
-                                                </span>
-                                            )}
+                                    {lockStatus.locked && lockStatus.executingColor === bot.candleColor ? (
+                                        <div className="flex items-center gap-1.5 text-[#FF6B35] font-bold text-[10px]">
+                                            <Activity className="w-3 h-3 animate-pulse" />
+                                            EXECUTING ({formatCountdown(lockStatus.remaining)})
                                         </div>
                                     ) : (
-                                        <span className="text-[10px] text-[#00FF41] flex items-center gap-1 font-bold">
-                                            <Activity className="w-3 h-3" /> Ready
-                                        </span>
+                                        <span className="text-[#A0A9B8] text-[10px]">READY</span>
                                     )}
                                 </td>
                                 <td className="px-4 py-3">
-                                    <div className="flex items-center gap-1.5 opacity-80 bg-[#0F1419] px-2 py-0.5 rounded border border-custom w-fit">
-                                        <FileText className="w-3 h-3 text-[#9D4EDD]" />
-                                        <span className="text-xs text-[#A0A9B8] truncate w-20" title={bot.templateName}>
-                                            {bot.templateName}
-                                        </span>
-                                    </div>
+                                    <Badge variant="outline" className="bg-[#252B33] text-[#A0A9B8] border-custom text-[10px]">
+                                        <FileText className="w-3 h-3 mr-1" /> STANDARD
+                                    </Badge>
                                 </td>
                                 <td className="px-4 py-3 text-right">
-                                    <div className="flex justify-end gap-1">
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-[#252B33]" onClick={() => handleToggle(bot.id)}>
-                                            {isPaused ? <Play className="w-3 h-3 text-[#00FF41]" /> : <Pause className="w-3 h-3 text-[#FF6B35]" />}
+                                    <div className="flex items-center justify-end gap-1">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-400 hover:bg-blue-900/20" onClick={() => onEdit(bot)}>
+                                            <Edit className="w-3.5 h-3.5" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 hover:bg-[#252B33]" onClick={() => onEdit(bot)}>
-                                            <Edit className="w-3 h-3 text-[#00D9FF]" />
+                                        <Button variant="ghost" size="icon" className={cn("h-8 w-8", isPaused ? "text-emerald-400" : "text-yellow-400")} onClick={() => handleToggle(botId)}>
+                                            {isPaused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
                                         </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-7 w-7 hover:bg-[#FF3B30]/20 hover:text-[#FF3B30]"
-                                            onClick={() => handleDelete(bot)}
-                                            title="Delete Bot"
-                                        >
-                                            <Trash2 className="w-3 h-3 text-[#FF3B30]/70" />
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400 hover:bg-red-900/20" onClick={() => handleDelete(bot)}>
+                                            <Trash2 className="w-3.5 h-3.5" />
                                         </Button>
                                     </div>
                                 </td>

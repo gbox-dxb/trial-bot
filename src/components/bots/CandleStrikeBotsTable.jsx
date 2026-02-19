@@ -176,11 +176,11 @@ export default function CandleStrikeBotsTable({ refreshTrigger, onEdit, filterCo
                                 </td>
                                 <td className="px-4 py-3">
                                     <div className="flex flex-col">
-                                        <span className="text-xs font-bold text-white">
-                                            {bot.perCoinSize?.[bot.pair] || bot.baseOrderSize || 0} {bot.sizeMode || 'USDT'}
+                                        <span className="font-mono font-medium text-slate-200">
+                                            $500.00
                                         </span>
-                                        <span className="text-[10px] text-[#A0A9B8]">
-                                            Mrg: {((bot.perCoinSize?.[bot.pair] || bot.baseOrderSize || 0) / (bot.perCoinLeverage?.[bot.pair] || bot.leverage || 1)).toFixed(2)}
+                                        <span className="text-[10px] text-slate-500">
+                                            Margin used: $50.00
                                         </span>
                                     </div>
                                 </td>

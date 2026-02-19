@@ -325,7 +325,7 @@ export default function UnifiedPositionsTable({ defaultFilter = 'All', showHisto
                                     {pos.side && pos.side !== 'Neutral' && (
                                       <badge
                                         variant="outline"
-                                        className={`text-[10px] px-2 py-0.5 border rounded-[2px] whitespace-nowrap tracking-[0.15em] w-max uppercase ${['long', 'buy'].includes(pos.side)
+                                        className={`text-[10px] px-2 py-0.5 border rounded-full whitespace-nowrap tracking-[0.15em] w-max uppercase shadow-lg [text-shadow:1px_1px_3px_rgba(0,0,0,0.35)] ${['long', 'buy'].includes(pos.side)
                                           ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
                                           : "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
                                           }`}
@@ -341,7 +341,6 @@ export default function UnifiedPositionsTable({ defaultFilter = 'All', showHisto
                                   {pos.type}
                                 </span>
                               </td>
-
                               {/* Source / Template Column */}
                               <td className="px-4 py-3">
                                 <div
@@ -349,13 +348,17 @@ export default function UnifiedPositionsTable({ defaultFilter = 'All', showHisto
                                   onClick={() => handleViewDetails(pos)}
                                 >
                                   <div className="flex items-center gap-1.5 text-xs text-slate-300">
-                                    {pos.botId ? <Bot className="w-3 h-3 text-[#00D9FF]" /> : <FileText className="w-3 h-3 text-[#9D4EDD]" />}
-                                    <span className="truncate max-w-[120px] font-medium">{sourceLabel}</span>
+                                    {pos.botId ? (
+                                      <Bot className="w-3 h-3 text-[#00D9FF]" />
+                                    ) : (
+                                      <FileText className="w-3 h-3 text-[#9D4EDD]" />
+                                    )}
+                                    <span className="whitespace-nowrap font-medium">{sourceLabel}</span>
                                   </div>
                                   {original.templateMetadata && (
                                     <div className="flex items-center gap-1.5 text-[10px] text-[#A0A9B8]">
                                       <Layers className="w-2.5 h-2.5" />
-                                      <span className="truncate max-w-[120px]">{original.templateMetadata.name}</span>
+                                      <span className="whitespace-nowrap">{original.templateMetadata.name}</span>
                                     </div>
                                   )}
                                 </div>
@@ -371,18 +374,26 @@ export default function UnifiedPositionsTable({ defaultFilter = 'All', showHisto
                               <td className="px-4 py-3">
                                 <div className="flex flex-col">
                                   <span className="font-mono font-medium text-slate-200 text-xs">
-                                    {pos.tp && Object.entries(pos.tp).map(([key, value]) => (
-                                      <span key={key} className="mr-1">
-                                        {key}: {value}
-                                      </span>
-                                    ))}
+                                    {pos.tp &&
+                                      Object.entries(pos.tp).map(([key, value]) => (
+                                        <span
+                                          key={key}
+                                          className="mr-1 w-[15ch] break-words inline-block"
+                                        >
+                                          {key}: {value}
+                                        </span>
+                                      ))}
                                   </span>
                                   <span className="text-[10px] text-slate-500">
-                                    {pos.sl && Object.entries(pos.sl).map(([key, value]) => (
-                                      <span key={key} className="mr-1">
-                                        {key}: {value}
-                                      </span>
-                                    ))}
+                                    {pos.sl &&
+                                      Object.entries(pos.sl).map(([key, value]) => (
+                                        <span
+                                          key={key}
+                                          className="mr-1 w-[15ch] break-words inline-block"
+                                        >
+                                          {key}: {value}
+                                        </span>
+                                      ))}
                                   </span>
                                 </div>
                               </td>

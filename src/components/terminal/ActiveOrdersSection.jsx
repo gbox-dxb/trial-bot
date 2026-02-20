@@ -132,17 +132,19 @@ export default function ActiveOrdersSection({ className, refreshTrigger }) {
           <Button
             variant="ghost"
             size="sm"
-            lassName="h-8 w-8 p-0 text-slate-400 hover:text-purple-400 hover:bg-purple-900 rounded-full transition-all duration-300"
-            onClick={loadOrders}
+            className="h-8 px-4 text-red-400 hover:text-red-300 hover:bg-red-900 rounded-full transition-all duration-300"
+            onClick={handleDeleteAll}
           >
-            <RefreshCcw className={cn("w-4 h-4", loading && "animate-spin")} />
+            Delete All
           </Button>
+
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 px-4 text-red-400 hover:text-red-300 hover:bg-red-900 rounded-full transition-all duration-300"
-            onClick={handleDeleteAll}>
-            Delete All
+            className="h-8 w-8 p-0 text-slate-400 hover:text-purple-400 hover:bg-purple-900 rounded-full transition-all duration-300"
+            onClick={loadOrders}
+          >
+            <RefreshCcw className={cn("w-4 h-4", loading && "animate-spin")} />
           </Button>
         </div>
       </CardHeader>

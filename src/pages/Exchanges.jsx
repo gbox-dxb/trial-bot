@@ -34,30 +34,31 @@ export default function Exchanges() {
     setExchanges(keyManagement.getExchangeAccounts(userId));
   };
 
+  const fetchAndUpdateBalance = async (acc) => {
+    if (acc.mode === 'Demo') return;
+    try {
+      const credentials = keyManagement.getDecryptedKeys(userId, acc.id);
+      if (!credentials) return;
+
+      const connector = acc.exchange === 'Binance' ? BinanceConnector : MexcConnector;
+      const bal = await connector.getBalance({ ...credentials, marketType: acc.type });
+
+      const newBalance = bal.USDT.available;
+      keyManagement.updateAccountDetails(userId, acc.id, { balance: newBalance });
+      loadExchanges(); // Trigger UI update immediately for this account
+    } catch (e) {
+      console.error(`Failed to refresh balance for ${acc.name}:`, e);
+    }
+  };
+
   const refreshBalances = async () => {
     if (isRefreshing) return;
     setIsRefreshing(true);
 
     const accounts = keyManagement.getExchangeAccounts(userId);
+    // Refresh all accounts in parallel, each updating the UI as it finishes
+    await Promise.all(accounts.map(acc => fetchAndUpdateBalance(acc)));
 
-    for (const acc of accounts) {
-      if (acc.mode === 'Demo') continue;
-
-      try {
-        const credentials = keyManagement.getDecryptedKeys(userId, acc.id);
-        if (!credentials) continue;
-
-        const connector = acc.exchange === 'Binance' ? BinanceConnector : MexcConnector;
-        const bal = await connector.getBalance({ ...credentials, marketType: acc.type });
-
-        const newBalance = bal.USDT.available;
-        keyManagement.updateAccountDetails(userId, acc.id, { balance: newBalance });
-      } catch (e) {
-        console.error(`Failed to refresh balance for ${acc.name}:`, e);
-      }
-    }
-
-    loadExchanges();
     setIsRefreshing(false);
     toast({ title: "Balances Updated" });
   };
@@ -100,12 +101,13 @@ export default function Exchanges() {
     return !formData.apiKey || !formData.apiSecret;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (isSaveDisabled()) return;
 
+    let newAccount;
     if (formData.mode === 'Demo') {
       // Explicitly use saveDemoAccount for demo accounts
-      keyManagement.saveDemoAccount({
+      newAccount = keyManagement.saveDemoAccount({
         name: formData.name,
         exchange: formData.exchange,
         type: formData.type,
@@ -113,9 +115,9 @@ export default function Exchanges() {
         leverage: 20
       });
     } else {
-      keyManagement.saveExchangeKeys(
+      newAccount = keyManagement.saveExchangeKeys(
         userId, formData.exchange, formData.type, formData.mode,
-        formData.apiKey, formData.apiSecret, formData.name
+        formData.apiKey, formData.apiSecret, formData.name, formData.balance
       );
     }
 
@@ -123,6 +125,11 @@ export default function Exchanges() {
     setIsAddDialogOpen(false);
     setFormData({ name: '', exchange: 'Binance', type: 'Futures', mode: 'Live', apiKey: '', apiSecret: '', status: 'inactive', balance: 0 });
     toast({ title: "Account Saved" });
+
+    // Instantly fetch balance if it was not already fetched or is 0
+    if (newAccount && newAccount.mode !== 'Demo') {
+      fetchAndUpdateBalance(newAccount);
+    }
   };
 
   const handleDelete = (id) => {

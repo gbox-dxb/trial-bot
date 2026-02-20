@@ -70,11 +70,11 @@ export const keyManagement = {
   /**
    * Save exchange API keys securely (Live accounts)
    */
-  saveExchangeKeys(userId, exchange, type, mode, apiKey, apiSecret, name) {
+  saveExchangeKeys(userId, exchange, type, mode, apiKey, apiSecret, name, balance) {
     // If it's a demo account request coming through here, route it to saveDemoAccount
     if (mode === 'Demo') {
        return this.saveDemoAccount({
-           exchange, type, name, balance: 10000
+           exchange, type, name, balance: balance || 10000
        });
     }
 
@@ -92,7 +92,7 @@ export const keyManagement = {
         apiSecretEncrypted: CryptoJS.AES.encrypt(apiSecret, userKey).toString(),
         createdAt: Date.now(),
         isActive: true,
-        balance: 0 // Will be updated by connector
+        balance: balance || 0 // Initial balance if already fetched
       };
 
       accounts.push(newAccount);

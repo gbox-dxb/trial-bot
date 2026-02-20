@@ -7,11 +7,14 @@ import { apiProxy } from '@/lib/apiProxy';
  * Client-side signing and timestamp generation have been removed/delegated.
  */
 export const BinanceConnector = {
-  
+
   async validateKeys(credentials) {
     try {
-      // Check account info (Spot endpoint works for general key validation)
-      await apiProxy.request('binance', '/api/v3/account', 'GET', {}, {}, credentials);
+      // Use appropriate endpoint for validation based on market type
+      const isFutures = credentials.marketType === 'Futures';
+      const endpoint = isFutures ? '/fapi/v2/account' : '/api/v3/account';
+
+      await apiProxy.request('binance', endpoint, 'GET', {}, {}, credentials);
       return { valid: true };
     } catch (e) {
       return { valid: false, error: e.message };
@@ -74,7 +77,7 @@ export const BinanceConnector = {
 
   async setLeverage(symbol, leverage, credentials) {
     if (credentials.marketType !== 'Futures') return;
-    
+
     await apiProxy.request('binance', '/fapi/v1/leverage', 'POST', {
       symbol,
       leverage
@@ -84,11 +87,11 @@ export const BinanceConnector = {
   async getOpenPositions(credentials) {
     if (credentials.marketType !== 'Futures') return [];
     try {
-       const data = await apiProxy.request('binance', '/fapi/v2/positionRisk', 'GET', {}, {}, credentials);
-       return data.filter(p => parseFloat(p.positionAmt) !== 0);
+      const data = await apiProxy.request('binance', '/fapi/v2/positionRisk', 'GET', {}, {}, credentials);
+      return data.filter(p => parseFloat(p.positionAmt) !== 0);
     } catch (e) {
-       console.error(e);
-       return [];
+      console.error(e);
+      return [];
     }
   },
 
@@ -96,19 +99,19 @@ export const BinanceConnector = {
     const isFutures = credentials.marketType === 'Futures';
     const endpoint = isFutures ? '/fapi/v1/openOrders' : '/api/v3/openOrders';
     try {
-       return await apiProxy.request('binance', endpoint, 'GET', {}, {}, credentials);
+      return await apiProxy.request('binance', endpoint, 'GET', {}, {}, credentials);
     } catch (e) {
-       return [];
+      return [];
     }
   },
 
   async cancelOrder(orderId, symbol, credentials) {
     const isFutures = credentials.marketType === 'Futures';
     const endpoint = isFutures ? '/fapi/v1/order' : '/api/v3/order';
-    
+
     return await apiProxy.request('binance', endpoint, 'DELETE', {
-        symbol,
-        orderId
+      symbol,
+      orderId
     }, {}, credentials);
   },
 

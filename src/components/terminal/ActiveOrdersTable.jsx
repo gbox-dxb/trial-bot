@@ -54,17 +54,10 @@ export default function ActiveOrdersTable({ orders, prices, onEdit, onClosePosit
                   <div className="flex flex-col gap-1">
                     <span className="font-bold text-white flex items-center gap-2">
                       {order.pair}
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "text-[10px] px-1.5 py-0 border",
-                          order.direction === 'LONG'
-                            ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
-                            : "border-red-500/30 text-red-400 bg-red-500/10"
-                        )}
-                      >
+                      <badge className="flex items-center flex-nowrap whitespace-nowrap w-fit rounded-full bg-emerald-300/20 text-emerald-400 border border-emerald-300/20 hover:bg-emerald-500/30 px-3 py-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse shrink-0"></div>
                         {order.direction} {order.leverage}x
-                      </Badge>
+                      </badge>
                     </span>
                     <div className="flex items-center gap-2 text-[10px] mt-1">
                       <span className={cn(

@@ -1,4 +1,5 @@
 import CryptoJS from 'crypto-js';
+import { CORS_PROXY, USE_PROXY, BASE_URLS } from './config';
 
 /**
  * API Proxy Service
@@ -13,22 +14,10 @@ import CryptoJS from 'crypto-js';
  * 
  * SECURITY NOTE:
  * - In this sandbox, secrets are processed client-side (simulated backend).
- * - Requests are routed through 'https://corsproxy.io/?' to bypass browser CORS restrictions.
+ * - Requests are routed through the configured CORS_PROXY to bypass browser CORS restrictions.
  * - This configuration is for development/sandbox use. Production apps should use a real backend.
  */
 
-const CORS_PROXY = 'https://corsproxy.io/?';
-
-const BASE_URLS = {
-  binance: {
-    spot: 'https://api.binance.com',
-    futures: 'https://fapi.binance.com'
-  },
-  mexc: {
-    spot: 'https://api.mexc.com',
-    futures: 'https://contract.mexc.com'
-  }
-};
 
 // Helper: Standard HMAC-SHA256 Signing
 const generateSignature = (queryString, apiSecret) => {
@@ -37,32 +26,37 @@ const generateSignature = (queryString, apiSecret) => {
 
 // Internal Simulator for "Backend" Logic
 const executeSimulatedBackendRequest = async (exchange, endpoint, method, params, headers, credentials) => {
-  const { apiKey, apiSecret, marketType } = credentials;
-  
+  const { apiKey, apiSecret, marketType, mode } = credentials;
+
   // 1. Resolve Base URL
   const typeKey = (marketType && marketType.toLowerCase().includes('futures')) ? 'futures' : 'spot';
-  const baseUrl = BASE_URLS[exchange][typeKey];
-  
+  let baseUrl = BASE_URLS[exchange][typeKey];
+
+  // Handling Testnet
+  if (mode === 'Testnet' && BASE_URLS[exchange].testnet) {
+    baseUrl = BASE_URLS[exchange].testnet[typeKey] || baseUrl;
+  }
+
   if (!baseUrl) {
-    throw new Error(`Configuration missing for ${exchange} ${typeKey}`);
+    throw new Error(`Configuration missing for ${exchange} ${typeKey} (${mode || 'Live'})`);
   }
 
   // 2. Add Server-Side Timestamp (Simulated)
   const timestamp = Date.now();
   const requestParams = { ...params, timestamp };
-  
+
   // 3. Generate Query String & Signature
   // Note: Most exchanges require query string sorting, URLSearchParams handles standard encoding.
   const queryString = new URLSearchParams(requestParams).toString();
   const signature = generateSignature(queryString, apiSecret);
-  
+
   // 4. Construct Final URL
   // Both Binance and MEXC generally accept the signature in the query string 
   // even for POST requests if the body isn't JSON payload based (or hybrid).
   // For this implementation, we append to URL to match standard Connector patterns.
   const signedQuery = `${queryString}&signature=${signature}`;
   const targetUrl = `${baseUrl}${endpoint}?${signedQuery}`;
-  
+
   // 5. Prepare Headers
   const requestHeaders = {
     'Content-Type': 'application/json',
@@ -76,12 +70,12 @@ const executeSimulatedBackendRequest = async (exchange, endpoint, method, params
     requestHeaders['X-MEXC-APIKEY'] = apiKey;
   }
 
-  // 6. Execute Request via CORS Proxy
-  // We double-encode the target URL to ensure special characters survive the proxy transit
-  const proxyUrl = `${CORS_PROXY}${encodeURIComponent(targetUrl)}`;
+  // 6. Execute Request (Optionally via CORS Proxy)
+  // We double-encode the target URL if using proxy to ensure special characters survive transit
+  const finalRequestUrl = USE_PROXY ? `${CORS_PROXY}${encodeURIComponent(targetUrl)}` : targetUrl;
 
   try {
-    const response = await fetch(proxyUrl, {
+    const response = await fetch(finalRequestUrl, {
       method: method,
       headers: requestHeaders
     });
@@ -117,7 +111,7 @@ export const apiProxy = {
     if (!credentials || !credentials.apiKey || !credentials.apiSecret) {
       throw new Error('Missing API credentials for request');
     }
-    
+
     return executeSimulatedBackendRequest(exchange, endpoint, method, params, headers, credentials);
   }
 };

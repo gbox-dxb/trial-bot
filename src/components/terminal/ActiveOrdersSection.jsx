@@ -29,10 +29,32 @@ export default function ActiveOrdersSection({ className, refreshTrigger }) {
       "Are you sure you want to delete all active positions?"
     );
 
-    if (confirmed) {
-      console.log("All deleted!");
-      // Your delete logic here
+    if (!confirmed) return;
+
+    const allOrders = storage.getActiveOrders();
+
+    if (!allOrders || allOrders.length === 0) {
+      toast({
+        title: "No Active Orders",
+        description: "There are no active orders to delete.",
+        variant: "default"
+      });
+      return;
     }
+
+    allOrders.forEach(order => {
+      storage.deleteActiveOrder(order.id);
+    });
+
+    setOrders([]);
+
+    toast({
+      title: "All Active Orders Deleted",
+      description: "All active orders have been deleted.",
+      variant: "default"
+    });
+
+    console.log("All deleted!");
   };
   // Close Position Dialog State
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);

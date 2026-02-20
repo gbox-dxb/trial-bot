@@ -16,6 +16,7 @@ export default function Exchanges() {
   const [exchanges, setExchanges] = useState([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [formData, setFormData] = useState({
     name: '', exchange: 'Binance', type: 'Futures', mode: 'Live',
     apiKey: '', apiSecret: '', status: 'inactive', balance: 0
@@ -26,11 +27,39 @@ export default function Exchanges() {
 
   useEffect(() => {
     loadExchanges();
+    refreshBalances();
   }, []);
 
   const loadExchanges = () => {
-    // getExchangeAccounts now returns merged list of Live and Demo accounts
     setExchanges(keyManagement.getExchangeAccounts(userId));
+  };
+
+  const refreshBalances = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+
+    const accounts = keyManagement.getExchangeAccounts(userId);
+
+    for (const acc of accounts) {
+      if (acc.mode === 'Demo') continue;
+
+      try {
+        const credentials = keyManagement.getDecryptedKeys(userId, acc.id);
+        if (!credentials) continue;
+
+        const connector = acc.exchange === 'Binance' ? BinanceConnector : MexcConnector;
+        const bal = await connector.getBalance({ ...credentials, marketType: acc.type });
+
+        const newBalance = bal.USDT.available;
+        keyManagement.updateAccountDetails(userId, acc.id, { balance: newBalance });
+      } catch (e) {
+        console.error(`Failed to refresh balance for ${acc.name}:`, e);
+      }
+    }
+
+    loadExchanges();
+    setIsRefreshing(false);
+    toast({ title: "Balances Updated" });
   };
 
   const handleTestConnection = async () => {
@@ -108,44 +137,55 @@ export default function Exchanges() {
       <div className="space-y-6 p-6 max-w-7xl mx-auto">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-white">My Exchanges</h1>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-purple-600 hover:bg-purple-700 font-bold"><Plus className="mr-2 h-4 w-4" /> Add Account</Button>
-            </DialogTrigger>
-            <DialogContent className="bg-slate-900 border-slate-700 text-white">
-              <DialogHeader><DialogTitle>Connect Exchange</DialogTitle></DialogHeader>
-              <div className="space-y-4 py-4">
-                <Input placeholder="Nickname" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="bg-[#0F1419]" />
-                <div className="grid grid-cols-2 gap-2">
-                  <select className="bg-[#0F1419] p-2 rounded border border-slate-800 text-white" value={formData.exchange} onChange={e => setFormData({ ...formData, exchange: e.target.value })}>
-                    <option value="Binance">Binance</option><option value="Mexc">MEXC</option>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={refreshBalances}
+              disabled={isRefreshing}
+              className="border-slate-700 text-white hover:bg-slate-800"
+            >
+              {isRefreshing ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              Refresh
+            </Button>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-purple-600 hover:bg-purple-700 font-bold"><Plus className="mr-2 h-4 w-4" /> Add Account</Button>
+              </DialogTrigger>
+              <DialogContent className="bg-slate-900 border-slate-700 text-white">
+                <DialogHeader><DialogTitle>Connect Exchange</DialogTitle></DialogHeader>
+                <div className="space-y-4 py-4">
+                  <Input placeholder="Nickname" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="bg-[#0F1419]" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <select className="bg-[#0F1419] p-2 rounded border border-slate-800 text-white" value={formData.exchange} onChange={e => setFormData({ ...formData, exchange: e.target.value })}>
+                      <option value="Binance">Binance</option><option value="Mexc">MEXC</option>
+                    </select>
+                    <select className="bg-[#0F1419] p-2 rounded border border-slate-800 text-white" value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })}>
+                      <option value="Spot">Spot</option><option value="Futures">Futures</option>
+                    </select>
+                  </div>
+                  <select className="w-full bg-[#0F1419] p-2 rounded border border-slate-800 text-white" value={formData.mode} onChange={e => setFormData({ ...formData, mode: e.target.value, status: 'inactive' })}>
+                    <option value="Live">Live Trading</option>
+                    <option value="Testnet">Testnet</option>
+                    <option value="Demo">Demo / Paper</option>
                   </select>
-                  <select className="bg-[#0F1419] p-2 rounded border border-slate-800 text-white" value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })}>
-                    <option value="Spot">Spot</option><option value="Futures">Futures</option>
-                  </select>
-                </div>
-                <select className="w-full bg-[#0F1419] p-2 rounded border border-slate-800 text-white" value={formData.mode} onChange={e => setFormData({ ...formData, mode: e.target.value, status: 'inactive' })}>
-                  <option value="Live">Live Trading</option>
-                  <option value="Testnet">Testnet</option>
-                  <option value="Demo">Demo / Paper</option>
-                </select>
 
-                {formData.mode !== 'Demo' && (
-                  <>
-                    <Input placeholder="API Key" value={formData.apiKey} onChange={e => setFormData({ ...formData, apiKey: e.target.value })} className="bg-[#0F1419]" />
-                    <Input type="password" placeholder="API Secret" value={formData.apiSecret} onChange={e => setFormData({ ...formData, apiSecret: e.target.value })} className="bg-[#0F1419]" />
-                  </>
-                )}
+                  {formData.mode !== 'Demo' && (
+                    <>
+                      <Input placeholder="API Key" value={formData.apiKey} onChange={e => setFormData({ ...formData, apiKey: e.target.value })} className="bg-[#0F1419]" />
+                      <Input type="password" placeholder="API Secret" value={formData.apiSecret} onChange={e => setFormData({ ...formData, apiSecret: e.target.value })} className="bg-[#0F1419]" />
+                    </>
+                  )}
 
-                <div className="flex items-center gap-2">
-                  <Button onClick={handleTestConnection} disabled={isTesting || formData.mode === 'Demo'} variant="outline" className="flex-1 border-slate-600">
-                    {isTesting ? <RefreshCw className="animate-spin h-4 w-4" /> : 'Test Connection'}
-                  </Button>
-                  <Button onClick={handleSave} disabled={isSaveDisabled()} className="flex-1 bg-green-600 hover:bg-green-700">Save</Button>
+                  <div className="flex items-center gap-2">
+                    <Button onClick={handleTestConnection} disabled={isTesting || formData.mode === 'Demo'} variant="outline" className="flex-1 border-slate-600">
+                      {isTesting ? <RefreshCw className="animate-spin h-4 w-4" /> : 'Test Connection'}
+                    </Button>
+                    <Button onClick={handleSave} disabled={isSaveDisabled()} className="flex-1 bg-green-600 hover:bg-green-700">Save</Button>
+                  </div>
                 </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

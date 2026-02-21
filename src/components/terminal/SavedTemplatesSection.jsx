@@ -83,6 +83,7 @@ export default function SavedTemplatesSection({ onSelectTemplate, className, ref
       });
     } finally {
       setProcessingId(null);
+      window.location.reload();
     }
   };
 

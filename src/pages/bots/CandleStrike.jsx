@@ -4,6 +4,7 @@ import CandleStrikeChart from '@/components/bots/CandleStrikeChart';
 import CandleStrikeForm from '@/components/bots/CandleStrikeForm';
 import CandleStrikeBotsTable from '@/components/bots/CandleStrikeBotsTable';
 import MultiChartContainer from '@/components/MultiChartContainer';
+import { Button } from '@/components/ui/button';
 import { candleStrikeBotEngine } from '@/lib/candleStrikeBotEngine';
 import { useCandleStrikeMonitor } from '@/hooks/useCandleStrikeMonitor';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -80,7 +81,16 @@ const StrategyView = ({ color }) => {
           isGreen ? "border-custom bg-slate-900/50" : "border-custom bg-slate-900/50"
         )}>
           <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Active {color} Bots</h3>
-          <span className="text-[10px] text-gray-600">Auto-refreshing</span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-4 text-red-400 hover:text-red-300 hover:bg-red-900 rounded-full transition-all duration-300"
+            >
+              Delete All
+            </Button>
+            <span className="text-[10px] text-gray-600">Auto-refreshing</span>
+          </div>
         </div>
         <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
           <CandleStrikeBotsTable

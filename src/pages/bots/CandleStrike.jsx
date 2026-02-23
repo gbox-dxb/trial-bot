@@ -4,6 +4,7 @@ import CandleStrikeChart from '@/components/bots/CandleStrikeChart';
 import CandleStrikeForm from '@/components/bots/CandleStrikeForm';
 import CandleStrikeBotsTable from '@/components/bots/CandleStrikeBotsTable';
 import MultiChartContainer from '@/components/MultiChartContainer';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { candleStrikeBotEngine } from '@/lib/candleStrikeBotEngine';
 import { useCandleStrikeMonitor } from '@/hooks/useCandleStrikeMonitor';
@@ -15,6 +16,7 @@ const StrategyView = ({ color }) => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingBot, setEditingBot] = useState(null);
   const [config, setConfig] = useState({});
+  const [botCount, setBotCount] = useState(0);
 
   const handleBotCreated = (config) => {
     if (editingBot) {
@@ -36,6 +38,7 @@ const StrategyView = ({ color }) => {
 
   const isMultiCoin = config.selectedCoins && config.selectedCoins.length > 1;
   const isGreen = color === 'GREEN';
+  const isRed = color === 'RED';
 
   return (
     <div className="flex-1 flex flex-col gap-4 h-full min-h-0">
@@ -80,7 +83,15 @@ const StrategyView = ({ color }) => {
           "px-4 py-2 border-b flex justify-between items-center flex-none",
           isGreen ? "border-custom bg-slate-900/50" : "border-custom bg-slate-900/50"
         )}>
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Active {color} Bots</h3>
+          <h3 className="flex items-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
+            <span>Active {color} Bots</span>
+            <Badge
+              variant="secondary"
+              className="bg-purple-800 text-purple-200 text-[11px] border border-purple-700 px-2 py-1 rounded-full shadow-sm"
+            >
+              Total: {botCount}
+            </Badge>
+          </h3>
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -97,6 +108,7 @@ const StrategyView = ({ color }) => {
             refreshTrigger={refreshTrigger}
             onEdit={handleEdit}
             filterColor={color}
+            onCountChange={setBotCount}
           />
         </div>
       </div>

@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
 
-export default function CandleStrikeBotsTable({ refreshTrigger, onEdit, filterColor }) {
+export default function CandleStrikeBotsTable({ refreshTrigger, onEdit, filterColor, onCountChange }) {
     const [bots, setBots] = useState([]);
     const [lockStatus, setLockStatus] = useState({ locked: false, remaining: 0, executingColor: null });
     const { toast } = useToast();
@@ -16,12 +16,17 @@ export default function CandleStrikeBotsTable({ refreshTrigger, onEdit, filterCo
         loadBots();
         const interval = setInterval(loadBots, 1000);
         return () => clearInterval(interval);
-    }, [refreshTrigger, filterColor]);
+    }, [refreshTrigger, filterColor, onCountChange]);
 
     const loadBots = () => {
         // Get all bots but only display the ones matching the current color tab (Green vs Red)
         const loadedBots = candleStrikeBotEngine.getBotsByColor(filterColor).reverse();
         setBots(loadedBots);
+
+        // Notify parent of the current count
+        if (onCountChange) {
+            onCountChange(loadedBots.length);
+        }
 
         setLockStatus(candleStrikeBotEngine.isSystemLocked());
     };

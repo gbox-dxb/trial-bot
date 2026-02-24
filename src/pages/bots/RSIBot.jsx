@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import RSIBotChart from '@/components/bots/RSIBotChart';
 import RSIBotForm from '@/components/bots/RSIBotForm';
@@ -6,10 +6,14 @@ import RSIBotsTable from '@/components/bots/RSIBotsTable';
 import MultiChartContainer from '@/components/MultiChartContainer';
 import { useRSIBotMonitor } from '@/hooks/useRSIBotMonitor';
 import { storage } from '@/lib/storage';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export default function RSIBot() {
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [editingBot, setEditingBot] = useState(null);
+    const [bots, setBots] = useState([]); // ✅ Added state for sync
+
     const [selectedConfig, setSelectedConfig] = useState({
         pair: 'BTCUSDT',
         selectedCoins: [],
@@ -23,24 +27,28 @@ export default function RSIBot() {
     // Start Monitor
     const { refreshTrigger: monitorTrigger } = useRSIBotMonitor();
 
+    // ✅ Sync bots from storage
+    useEffect(() => {
+        const storedBots = storage.getRSIBots() || [];
+        setBots(storedBots);
+    }, [refreshTrigger, monitorTrigger]);
+
     const handleBotCreated = (config) => {
         if (editingBot) {
-            // Update
-            const bots = storage.getRSIBots();
             const updated = bots.map(b => b.id === editingBot.id ? config : b);
             storage.saveRSIBots(updated);
+            setBots(updated);
             setEditingBot(null);
         } else {
-            // Create
-            const bots = storage.getRSIBots();
-            storage.saveRSIBots([config, ...bots]);
+            const updated = [config, ...bots];
+            storage.saveRSIBots(updated);
+            setBots(updated);
         }
         setRefreshTrigger(p => p + 1);
     };
 
     const handleEdit = (bot) => {
         setEditingBot(bot);
-        // Update chart view to match bot being edited
         setSelectedConfig({
             pair: bot.pair,
             selectedCoins: bot.selectedCoins || [],
@@ -56,10 +64,30 @@ export default function RSIBot() {
         setSelectedConfig(prev => ({ ...prev, ...newConfig }));
     };
 
-    const isMultiCoin = selectedConfig.selectedCoins && selectedConfig.selectedCoins.length > 1;
+    const isMultiCoin =
+        selectedConfig.selectedCoins &&
+        selectedConfig.selectedCoins.length > 1;
 
-    // Sync selectedConfig status with edited bot if active
-    const activeBotState = editingBot ? editingBot.status : (selectedConfig.status || 'Waiting');
+    const activeBotState =
+        editingBot ? editingBot.status : (selectedConfig.status || 'Waiting');
+
+    // ✅ Counter now uses state (single source of truth)
+    const botCount = bots.length;
+
+    // ✅ Delete All with confirmation
+    const handleDeleteAll = () => {
+        if (botCount === 0) return;
+
+        const confirmDelete = window.confirm(
+            "Are you sure you want to delete all RSI bot data?"
+        );
+
+        if (!confirmDelete) return;
+
+        storage.saveRSIBots([]);
+        setBots([]);
+        setRefreshTrigger(p => p + 1);
+    };
 
     return (
         <>
@@ -103,16 +131,47 @@ export default function RSIBot() {
 
                 {/* Bottom Table */}
                 <div className="h-[250px] flex-none rounded-xl border border-custom bg-slate-900/50 backdrop-blur overflow-hidden shadow-lg flex flex-col">
+
                     <div className="px-4 py-2 border-b border-custom bg-slate-900 flex justify-between items-center flex-none">
-                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Active RSI Bots</h3>
-                        <span className="text-[10px] text-gray-600">Auto-refreshing</span>
+
+                        <div className="flex items-center gap-3">
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                Active RSI Bots
+                            </h3>
+
+                            <Badge
+                                variant="secondary"
+                                className="bg-purple-800 text-purple-200 text-[11px] border border-purple-700 px-2 py-1 rounded-full shadow-sm"
+                            >
+                                Total: {botCount}
+                            </Badge>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-4 text-red-400 hover:text-red-300 hover:bg-red-900 rounded-full transition-all duration-300"
+                                onClick={handleDeleteAll}
+                                disabled={botCount === 0}
+                            >
+                                Delete All
+                            </Button>
+
+                            <span className="text-[10px] text-gray-600">
+                                Auto-refreshing
+                            </span>
+                        </div>
                     </div>
+
                     <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
                         <RSIBotsTable
+                            bots={bots}
                             refreshTrigger={refreshTrigger + monitorTrigger}
                             onEdit={handleEdit}
                         />
                     </div>
+
                 </div>
             </div>
         </>

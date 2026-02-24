@@ -66,6 +66,24 @@ export const candleStrikeBotEngine = {
     }
   },
 
+  deleteBotsByColor(color) {
+    if (!color) return 0;
+
+    const bots = storage.getCandleStrikeBots() || [];
+    const initialCount = bots.length;
+
+    // Filter out bots with the matching color
+    const updatedBots = bots.filter(b => b.candleColor !== color);
+    const deletedCount = initialCount - updatedBots.length;
+
+    if (deletedCount > 0) {
+      storage.saveCandleStrikeBots(updatedBots);
+      console.log(`[CandleStrike] Deleted ${deletedCount} bots with color ${color}.`);
+    }
+
+    return deletedCount;
+  },
+
   toggleBot(id) {
     const bots = storage.getCandleStrikeBots() || [];
     const bot = bots.find(b => b.id === id);

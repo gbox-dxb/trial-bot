@@ -36,6 +36,18 @@ const StrategyView = ({ color }) => {
     setEditingBot(bot);
   };
 
+  const handleDeleteAll = () => {
+    if (botCount === 0) return;
+
+    const strategyName = color === 'GREEN' ? 'Green Strategy' : 'Red Strategy';
+    const confirmed = window.confirm(`Are you sure you want to delete all ${strategyName} data?`);
+
+    if (confirmed) {
+      candleStrikeBotEngine.deleteBotsByColor(color);
+      setRefreshTrigger(prev => prev + 1);
+    }
+  };
+
   const isMultiCoin = config.selectedCoins && config.selectedCoins.length > 1;
   const isGreen = color === 'GREEN';
   const isRed = color === 'RED';
@@ -97,6 +109,8 @@ const StrategyView = ({ color }) => {
               variant="ghost"
               size="sm"
               className="h-8 px-4 text-red-400 hover:text-red-300 hover:bg-red-900 rounded-full transition-all duration-300"
+              onClick={handleDeleteAll}
+              disabled={botCount === 0}
             >
               Delete All
             </Button>

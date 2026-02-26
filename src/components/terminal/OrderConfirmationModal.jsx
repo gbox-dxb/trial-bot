@@ -148,11 +148,23 @@ export default function OrderConfirmationModal({
                         </td>
                         <td className="px-3 py-2 text-right text-white">{lev}x</td>
                         <td className="px-3 py-2 text-right text-white">${size.toFixed(2)}</td>
-                        <td className="px-3 py-2 text-right">
-                          {status === 'pending' && <Loader2 className="w-4 h-4 animate-spin ml-auto text-[#00D9FF]" />}
-                          {status === 'success' && <CheckCircle className="w-4 h-4 text-[#00FF41] ml-auto" />}
-                          {status === 'error' && <XCircle className="w-4 h-4 text-[#FF3B30] ml-auto" />}
-                          {!status && <span className="text-[#A0A9B8]">-</span>}
+                        <td className="px-3 py-2 text-right text-white">
+                          {orderConfig.takeProfitEnabled ? (
+                            <span className="text-[#00FF41]">
+                              {orderConfig.takeProfitMode === 'PRICE' ? `$${(orderConfig.perCoinTP?.[pair]?.price || orderConfig.takeProfit.price).toFixed(2)}` :
+                               orderConfig.takeProfitMode === 'PERCENT' ? `${(orderConfig.perCoinTP?.[pair]?.percent || orderConfig.takeProfit.percent)}%` :
+                               `$${(orderConfig.perCoinTP?.[pair]?.profit || orderConfig.takeProfit.profit)}`}
+                            </span>
+                          ) : '-'}
+                        </td>
+                        <td className="px-3 py-2 text-right text-white">
+                          {orderConfig.stopLossEnabled ? (
+                            <span className="text-[#FF3B30]">
+                              {orderConfig.stopLossMode === 'PRICE' ? `$${(orderConfig.perCoinSL?.[pair]?.price || orderConfig.stopLoss.price).toFixed(2)}` :
+                               orderConfig.stopLossMode === 'PERCENT' ? `${(orderConfig.perCoinSL?.[pair]?.percent || orderConfig.stopLoss.percent)}%` :
+                               `$${(orderConfig.perCoinSL?.[pair]?.loss || orderConfig.stopLoss.loss)}`}
+                            </span>
+                          ) : '-'}
                         </td>
                         <td className="px-3 py-2 text-right">
                           {status === 'pending' && <Loader2 className="w-4 h-4 animate-spin ml-auto text-[#00D9FF]" />}
@@ -160,7 +172,6 @@ export default function OrderConfirmationModal({
                           {status === 'error' && <XCircle className="w-4 h-4 text-[#FF3B30] ml-auto" />}
                           {!status && <span className="text-[#A0A9B8]">-</span>}
                         </td>
-
                       </tr>
                     );
                   })}

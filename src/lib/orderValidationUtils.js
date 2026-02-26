@@ -53,8 +53,6 @@ export const orderValidationUtils = {
       if (!sl) {
         errors.push(`Stop Loss is required for ${pair}`);
       } else {
-        if (mode === 'PRICE' && (!tp.price || tp.price <= 0)) errors.push(`Invalid Stop Loss Price for ${pair}`); // Note: tp.price here looks like a copy-paste error in original thought, fixing to sl.price
-        // Logic correction: Check SL values
         if (mode === 'PRICE' && (!sl.price || sl.price <= 0)) errors.push(`Invalid Stop Loss Price for ${pair}`);
         if (mode === 'PERCENT' && (!sl.percent || sl.percent <= 0)) errors.push(`Invalid Stop Loss percentage for ${pair}`);
         if (mode === 'LOSS' && (!sl.loss || sl.loss <= 0)) errors.push(`Invalid Stop Loss value for ${pair}`);

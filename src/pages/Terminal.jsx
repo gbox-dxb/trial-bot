@@ -271,7 +271,8 @@ export default function Terminal() {
     const validation = orderValidationUtils.validateOrderConfig({
       accountId, pairs, baseOrderSize, leverage, perCoinLeverage,
       entryPrice, perCoinPrice, takeProfitEnabled, stopLossEnabled,
-      takeProfit, stopLoss, perCoinTP, perCoinSL
+      takeProfit, stopLoss, perCoinTP, perCoinSL,
+      takeProfitMode, stopLossMode
     }, availableBalance, prices);
 
     if (!validation.valid) {
@@ -284,7 +285,8 @@ export default function Terminal() {
   const orderConfig = {
     accountId, pairs, direction, perCoinDirection, orderType, entryPrice, perCoinPrice,
     leverage, perCoinLeverage, baseOrderSize, perCoinSize,
-    takeProfitEnabled, stopLossEnabled, takeProfit, stopLoss, perCoinTP, perCoinSL, requiredMargin
+    takeProfitEnabled, stopLossEnabled, takeProfit, stopLoss, perCoinTP, perCoinSL,
+    takeProfitMode, stopLossMode, requiredMargin
   };
 
   return (

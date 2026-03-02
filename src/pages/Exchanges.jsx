@@ -18,7 +18,7 @@ export default function Exchanges() {
   const [isTesting, setIsTesting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [formData, setFormData] = useState({
-    name: '', exchange: 'Binance', type: 'Futures', mode: 'Live',
+    name: '', exchange: 'Binance', type: 'Futures', mode: 'Testnet',
     apiKey: '', apiSecret: '', status: 'inactive', balance: 0
   });
 
@@ -98,7 +98,7 @@ export default function Exchanges() {
   const isSaveDisabled = () => {
     if (!formData.name) return true;
     if (formData.mode === 'Demo') return false;
-    return !formData.apiKey || !formData.apiSecret;
+    return !formData.apiKey || !formData.apiSecret || formData.status !== 'active';
   };
 
   const handleSave = async () => {
@@ -123,7 +123,7 @@ export default function Exchanges() {
 
     loadExchanges();
     setIsAddDialogOpen(false);
-    setFormData({ name: '', exchange: 'Binance', type: 'Futures', mode: 'Live', apiKey: '', apiSecret: '', status: 'inactive', balance: 0 });
+    setFormData({ name: '', exchange: 'Binance', type: 'Futures', mode: 'Testnet', apiKey: '', apiSecret: '', status: 'inactive', balance: 0 });
     toast({ title: "Account Saved" });
 
     // Instantly fetch balance if it was not already fetched or is 0

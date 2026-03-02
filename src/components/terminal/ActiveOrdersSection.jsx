@@ -157,6 +157,7 @@ export default function ActiveOrdersSection({ className, refreshTrigger }) {
             className="h-8 px-4 text-red-400 hover:text-red-300 hover:bg-red-900 rounded-full transition-all duration-300"
             onClick={handleDeleteAll}
           >
+
             Delete All
           </Button>
 

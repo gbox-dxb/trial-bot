@@ -102,6 +102,12 @@ export const storage = {
     return data ? JSON.parse(data) : [];
   },
 
+  deleteClosedOrder(orderId) {
+    const orders = this.getClosedOrders();
+    const filtered = orders.filter(o => o.id !== orderId);
+    localStorage.setItem('closedOrders', JSON.stringify(filtered));
+  },
+
   // --- Bot Linked Orders ---
   getBotOrders(botId) {
     const active = this.getActiveOrders().filter(o => o.botId === botId);

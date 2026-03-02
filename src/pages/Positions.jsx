@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { storage } from '@/lib/storage';
+import { Button } from '@/components/ui/button';
+import { Trash2 } from 'lucide-react';
 import { Helmet } from 'react-helmet';
 import { useUnifiedPositions } from '@/hooks/useUnifiedPositions'; // Using hook here for stats
 import { usePrice } from '@/contexts/PriceContext';
@@ -8,29 +11,66 @@ import StatisticsSection from '@/components/positions/StatisticsSection';
 import UnifiedPositionsTable from '@/components/positions/UnifiedPositionsTable';
 
 const Positions = () => {
-  const { positions } = useUnifiedPositions();
+  const { positions, refresh } = useUnifiedPositions();
   const { prices } = usePrice();
   const [activeTab, setActiveTab] = useState('active');
+  const [currentFilteredPositions, setCurrentFilteredPositions] = useState([]);
+  const { toast } = useToast();
+
+  const activeCount = useMemo(() => positions.filter(p => !['CLOSED', 'FILLED', 'CANCELLED', 'EXPIRED'].includes(p.status)).length, [positions]);
+  const historyCount = useMemo(() => positions.filter(p => ['CLOSED', 'FILLED', 'CANCELLED', 'EXPIRED'].includes(p.status)).length, [positions]);
+
+  const handleDeleteAll = async () => {
+    if (currentFilteredPositions.length === 0) {
+      toast({ title: "No records to delete", variant: "destructive" });
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete all ${currentFilteredPositions.length} visible records?`)) return;
+
+    for (const pos of currentFilteredPositions) {
+      const isHistory = ['CLOSED', 'FILLED', 'CANCELLED', 'EXPIRED'].includes(pos.status);
+
+      if (isHistory) {
+        storage.deleteClosedOrder(pos.id);
+      } else {
+        if (pos.type === 'MARKET') {
+          storage.deleteActiveOrder(pos.id);
+        } else if (['GRID', 'DCA', 'RSI', 'MOMENTUM', 'CANDLE_STRIKE'].includes(pos.type)) {
+          if (pos.type === 'GRID') storage.deleteGridBot(pos.id);
+          if (pos.type === 'DCA') storage.deleteDCABot(pos.id);
+          if (pos.type === 'RSI') storage.deleteRSIBot(pos.id);
+          if (pos.type === 'MOMENTUM') storage.deleteMomentumBot(pos.id);
+          if (pos.type === 'CANDLE_STRIKE') storage.deleteCandleStrikeBot(pos.id);
+        } else if (pos.type === 'LIMIT') {
+          storage.deleteActiveOrder(pos.id);
+        }
+      }
+    }
+
+    toast({ title: "Success", description: `Deleted ${currentFilteredPositions.length} records.` });
+    refresh();
+  };
 
   // Stats calculation logic reused for the unified data
   const stats = useMemo(() => {
     const active = positions.filter(p => !['CLOSED', 'FILLED', 'CANCELLED', 'EXPIRED'].includes(p.status));
     const closed = positions.filter(p => ['CLOSED', 'FILLED', 'CANCELLED', 'EXPIRED'].includes(p.status));
-    
+
     // Live PnL
     let openPnL = 0;
     active.forEach(p => {
-       if (p.type === 'MARKET' && p.entryPrice) {
-          const curr = prices[p.symbol] || p.entryPrice;
-          const isLong = ['LONG', 'BUY', 'Long'].includes(p.side);
-          const diff = isLong ? curr - p.entryPrice : p.entryPrice - curr;
-          openPnL += diff * (p.size / p.entryPrice);
-       }
+      if (p.type === 'MARKET' && p.entryPrice) {
+        const curr = prices[p.symbol] || p.entryPrice;
+        const isLong = ['LONG', 'BUY', 'Long'].includes(p.side);
+        const diff = isLong ? curr - p.entryPrice : p.entryPrice - curr;
+        openPnL += diff * (p.size / p.entryPrice);
+      }
     });
 
     // Historic PnL (Only from Closed Market Orders usually stored with finalPnL)
     const closedPnL = closed.reduce((acc, curr) => {
-        return acc + (curr.originalData?.finalPnL || curr.originalData?.pnl || 0);
+      return acc + (curr.originalData?.finalPnL || curr.originalData?.pnl || 0);
     }, 0);
 
     const totalPnL = openPnL + closedPnL;
@@ -51,7 +91,7 @@ const Positions = () => {
   return (
     <>
       <Helmet><title>Positions - Trading Terminal</title></Helmet>
-      
+
       <div className="space-y-6 max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -69,19 +109,28 @@ const Positions = () => {
 
         <div className="bg-slate-900/50 backdrop-blur-xl rounded-2xl border border-custom p-1 min-h-[500px]">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="flex items-center px-4 pt-4 pb-2 border-b border-custom mb-4">
+            <div className="flex items-center justify-between px-4 pt-4 pb-2 border-b border-custom mb-4">
               <TabsList className="bg-slate-800">
-                <TabsTrigger value="active" className="px-6">Active Positions</TabsTrigger>
-                <TabsTrigger value="history" className="px-6">History</TabsTrigger>
+                <TabsTrigger value="active" className="px-6">Active Positions (Total: {activeCount})</TabsTrigger>
+                <TabsTrigger value="history" className="px-6">History (Total: {historyCount})</TabsTrigger>
               </TabsList>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDeleteAll}
+                className="bg-red-600 hover:bg-red-700 font-bold"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete All
+              </Button>
             </div>
 
             <TabsContent value="active" className="px-4 pb-4 mt-0">
-               <UnifiedPositionsTable showHistory={false} />
+              <UnifiedPositionsTable showHistory={false} onFilteredPositionsChange={setCurrentFilteredPositions} />
             </TabsContent>
 
             <TabsContent value="history" className="px-4 pb-4 mt-0">
-               <UnifiedPositionsTable showHistory={true} defaultFilter="All" />
+              <UnifiedPositionsTable showHistory={true} defaultFilter="All" onFilteredPositionsChange={setCurrentFilteredPositions} />
             </TabsContent>
           </Tabs>
         </div>

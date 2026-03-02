@@ -15,7 +15,7 @@ import { calculateUnrealizedPnL } from '@/lib/pnlUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 import RSIBotOrderDetailsModal from '@/components/bots/RSIBotOrderDetailsModal';
 
-export default function UnifiedPositionsTable({ defaultFilter = 'All', showHistory = false }) {
+export default function UnifiedPositionsTable({ defaultFilter = 'All', showHistory = false, onFilteredPositionsChange }) {
   const { positions, loading, refresh } = useUnifiedPositions();
   const { prices } = usePrice();
   const { toast } = useToast();
@@ -112,6 +112,12 @@ export default function UnifiedPositionsTable({ defaultFilter = 'All', showHisto
       return sortBy.direction === 'asc' ? valA - valB : valB - valA;
     });
   }, [positions, activeFilter, searchQuery, sortBy, prices, showHistory]);
+
+  useEffect(() => {
+    if (onFilteredPositionsChange) {
+      onFilteredPositionsChange(filteredPositions);
+    }
+  }, [filteredPositions, onFilteredPositionsChange]);
 
   // Grouping
   const groupedPositions = useMemo(() => {

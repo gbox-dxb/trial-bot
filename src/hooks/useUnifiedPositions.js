@@ -31,6 +31,8 @@ export const useUnifiedPositions = () => {
           sl: order.sl || {},
           status: order.status,
           timestamp: order.createdAt,
+          botId: order.botId,
+          botName: order.botName,
           originalData: order
         });
       });
@@ -51,6 +53,8 @@ export const useUnifiedPositions = () => {
           entryPrice: bot.currentPrice, // Approximate anchor
           status: bot.status.toUpperCase(),
           timestamp: bot.createdAt,
+          botId: bot.id,
+          botName: bot.name || 'Grid Bot',
           originalData: bot
         });
       });
@@ -71,6 +75,8 @@ export const useUnifiedPositions = () => {
           entryPrice: bot.averagePrice || bot.entryPrice,
           status: bot.status.toUpperCase(),
           timestamp: bot.createdAt,
+          botId: bot.id,
+          botName: bot.name || 'DCA Bot',
           originalData: bot
         });
       });
@@ -92,6 +98,8 @@ export const useUnifiedPositions = () => {
           entryPrice: 0,
           status: bot.status.toUpperCase(),
           timestamp: bot.createdAt,
+          botId: bot.id,
+          botName: bot.name || 'RSI Bot',
           originalData: bot
         });
       });
@@ -112,6 +120,8 @@ export const useUnifiedPositions = () => {
           entryPrice: bot.referencePrice || 0,
           status: bot.status.toUpperCase(),
           timestamp: bot.createdAt,
+          botId: bot.id,
+          botName: bot.name || 'Momentum Bot',
           originalData: bot
         });
       });
@@ -132,6 +142,8 @@ export const useUnifiedPositions = () => {
           entryPrice: 0,
           status: bot.status.toUpperCase(),
           timestamp: bot.createdAt,
+          botId: bot.id,
+          botName: bot.name || 'Candle Strike Bot',
           originalData: bot
         });
       });

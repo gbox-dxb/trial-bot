@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { storage } from '@/lib/storage';
 import { usePrice } from '@/contexts/PriceContext';
+import { orderPlacementService } from '@/lib/orderPlacementService';
 
 export const useUnifiedPositions = () => {
   const [positions, setPositions] = useState([]);
@@ -148,8 +149,14 @@ export const useUnifiedPositions = () => {
         });
       });
 
+      // 7. Filter out Template-related rows
+      const filteredPositions = allPositions.filter(pos => {
+        const sourceLabel = orderPlacementService.getOrderSource(pos.originalData || pos);
+        return !sourceLabel.startsWith('Template:');
+      });
+
       // Sort by newest first
-      setPositions(allPositions.sort((a, b) => b.timestamp - a.timestamp));
+      setPositions(filteredPositions.sort((a, b) => b.timestamp - a.timestamp));
     } catch (err) {
       console.error("Error fetching unified positions:", err);
     } finally {

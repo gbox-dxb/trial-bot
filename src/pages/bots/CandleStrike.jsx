@@ -12,11 +12,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 // Reusable component for each Strategy Tab
-const StrategyView = ({ color }) => {
+const StrategyView = ({ color, selectedPair }) => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editingBot, setEditingBot] = useState(null);
-  const [config, setConfig] = useState({});
+  const [config, setConfig] = useState({ pair: selectedPair || 'BTCUSDT' });
   const [botCount, setBotCount] = useState(0);
+
+  // Sync internal config pair with global selection
+  React.useEffect(() => {
+    if (selectedPair && config.pair !== selectedPair) {
+      setConfig(prev => ({ ...prev, pair: selectedPair }));
+    }
+  }, [selectedPair]);
 
   const handleBotCreated = (config) => {
     if (editingBot) {
@@ -130,7 +137,7 @@ const StrategyView = ({ color }) => {
   );
 };
 
-export default function CandleStrike() {
+export default function CandleStrike({ selectedPair }) {
   // Global monitoring hook - handles all bots regardless of color
   useCandleStrikeMonitor();
 
@@ -160,11 +167,11 @@ export default function CandleStrike() {
           </TabsList>
 
           <TabsContent value="green" className="flex-1 min-h-0 mt-0 data-[state=active]:flex flex-col">
-            <StrategyView color="GREEN" />
+            <StrategyView color="GREEN" selectedPair={selectedPair} />
           </TabsContent>
 
           <TabsContent value="red" className="flex-1 min-h-0 mt-0 data-[state=active]:flex flex-col">
-            <StrategyView color="RED" />
+            <StrategyView color="RED" selectedPair={selectedPair} />
           </TabsContent>
         </Tabs>
       </div>

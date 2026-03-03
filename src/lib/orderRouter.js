@@ -69,7 +69,7 @@ export const orderRouter = {
         createdAt: Date.now(),
         // Normalize fields for storage
         pair: intent.symbol,
-        direction: intent.side,
+        direction: intent.direction || intent.side, // Use preserved direction for UI
         entryPrice: intent.price,
         margin: (intent.quantity * intent.price) / intent.leverage, // Estimated
         tp: intent.takeProfit,

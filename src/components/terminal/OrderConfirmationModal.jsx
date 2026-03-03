@@ -26,20 +26,40 @@ export default function OrderConfirmationModal({
       status[pair] = 'pending';
       setExecutionStatus({ ...status });
 
-      // Determine individual parameters
-      const direction = orderConfig.perCoinDirection?.[pair] || orderConfig.direction;
+      // Map direction to side for exchange
+      const direction = (orderConfig.perCoinDirection?.[pair] || orderConfig.direction).toUpperCase();
+      const side = (direction === 'LONG' || direction === 'BUY') ? 'BUY' : 'SELL';
+
       const leverage = orderConfig.perCoinLeverage?.[pair] || orderConfig.leverage;
       const sizeUSDT = orderConfig.perCoinSize?.[pair] || (orderConfig.baseOrderSize / orderConfig.pairs.length);
-      const entryPrice = orderConfig.perCoinPrice?.[pair] || orderConfig.entryPrice || prices[pair];
+      const entryPrice = orderConfig.perCoinPrice?.[pair] || orderConfig.entryPrice || prices[pair] || 0;
 
-      // Calculate quantity (approx)
-      const quantity = (sizeUSDT * leverage) / entryPrice;
+      // Defensive check for calculation variables
+      if (!entryPrice || entryPrice <= 0 || !sizeUSDT || !leverage) {
+        status[pair] = 'error';
+        status[`${pair}_error`] = !entryPrice || entryPrice <= 0 ? 'Invalid price' : 'Invalid size/lev';
+        setExecutionStatus({ ...status });
+        continue;
+      }
+
+      // Calculate quantity with strict rounding (standard for most exchanges)
+      const rawQuantity = (sizeUSDT * leverage) / entryPrice;
+      const quantity = Number(rawQuantity.toFixed(3));
+
+      // Final validation before execution
+      if (isNaN(quantity) || quantity <= 0) {
+        status[pair] = 'error';
+        status[`${pair}_error`] = 'Invalid quantity';
+        setExecutionStatus({ ...status });
+        continue;
+      }
 
       const intent = {
         userId: 'user-1',
         exchangeAccountId: orderConfig.accountId,
         symbol: pair,
-        side: direction,
+        side: side, // Mapped for exchange
+        direction: direction, // Preserved for UI records
         orderType: orderConfig.orderType,
         quantity: quantity,
         price: entryPrice,

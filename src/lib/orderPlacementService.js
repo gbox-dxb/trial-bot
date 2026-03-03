@@ -71,7 +71,7 @@ export const orderPlacementService = {
         entryPrice: price,
         size: size, // Margin Amount
         leverage: leverage,
-        quantity: (size * leverage) / price, // Total Position Size in Coins
+        quantity: Number(((size * leverage) / price).toFixed(3)), // Total Position Size in Coins
         margin: size,
 
         // Risk Management (Template Config)

@@ -35,7 +35,7 @@ export default function Terminal() {
   const [perCoinPrice, setPerCoinPrice] = useState({});
 
   // Leverage
-  const [leverage, setLeverage] = useState(10);
+  const [leverage, setLeverage] = useState(33);
   const [leverageApplyAll, setLeverageApplyAll] = useState(true);
   const [perCoinLeverage, setPerCoinLeverage] = useState({});
   const [maxLeverage, setMaxLeverage] = useState(125);
@@ -214,6 +214,7 @@ export default function Terminal() {
 
   const handleSaveTemplate = ({ name, description, selectedCoins }) => {
     const template = {
+      uid: 'DATA_TEMPLATE',
       name,
       description,
       selectedCoins, // Save coins at top level

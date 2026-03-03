@@ -149,18 +149,12 @@ export const useUnifiedPositions = () => {
         });
       });
 
-      // 7. Filter out Template-related rows
-      // const filteredPositions = allPositions.filter(pos => {
-      //   const sourceLabel = orderPlacementService.getOrderSource(pos.originalData || pos);
-      //   return !sourceLabel.startsWith('Template:');
-      // });
-
-      // console.log("allPositions", allPositions);
-      // console.log("filteredPositions", filteredPositions);
-
+      // 7. Filter out DATA_TEMPLATE rows
+      const filteredPositions = allPositions.filter(pos => pos?.uid !== 'DATA_TEMPLATE');
+      console.log('filteredPositions', filteredPositions);
+      console.log('allPositions', allPositions);
       // Sort by newest first
-      // setPositions(filteredPositions.sort((a, b) => b.timestamp - a.timestamp));
-      setPositions(allPositions.sort((a, b) => b.timestamp - a.timestamp));
+      setPositions(filteredPositions.sort((a, b) => b.timestamp - a.timestamp));
     } catch (err) {
       console.error("Error fetching unified positions:", err);
     } finally {

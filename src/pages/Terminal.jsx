@@ -52,8 +52,8 @@ export default function Terminal() {
   const [stopLossEnabled, setStopLossEnabled] = useState(true);
   const [takeProfitMode, setTakeProfitMode] = useState('PROFIT');
   const [stopLossMode, setStopLossMode] = useState('LOSS');
-  const [takeProfit, setTakeProfit] = useState({ profit: 0, percent: 10, price: 0 });
-  const [stopLoss, setStopLoss] = useState({ loss: 0, percent: 1, price: 0 });
+  const [takeProfit, setTakeProfit] = useState({ profit: 20, percent: 10, price: 0 });
+  const [stopLoss, setStopLoss] = useState({ loss: 5, percent: 1, price: 0 });
   const [applyTPToAll, setApplyTPToAll] = useState(true);
   const [applySLToAll, setApplySLToAll] = useState(true);
   const [perCoinTP, setPerCoinTP] = useState({});

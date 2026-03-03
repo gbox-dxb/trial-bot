@@ -149,10 +149,12 @@ export const useUnifiedPositions = () => {
         });
       });
 
-      // 7. Filter out DATA_TEMPLATE rows
-      const filteredPositions = allPositions.filter(pos => pos?.uid !== 'DATA_TEMPLATE');
-      console.log('filteredPositions', filteredPositions);
+      // 7. Filter out rows where type is RSI and status is ACTIVE because it is getting duplicated
+      const filteredPositions = allPositions.filter(pos => pos?.type !== 'RSI' && pos?.status === 'ACTIVE');
+
       console.log('allPositions', allPositions);
+      console.log('filteredPositions', filteredPositions);
+
       // Sort by newest first
       setPositions(filteredPositions.sort((a, b) => b.timestamp - a.timestamp));
     } catch (err) {

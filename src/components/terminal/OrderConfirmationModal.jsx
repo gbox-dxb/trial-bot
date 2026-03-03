@@ -18,6 +18,7 @@ export default function OrderConfirmationModal({
 
   const handleConfirm = async () => {
     setExecuting(true);
+    setExecutionStatus({}); // Reset previous status
     const status = {};
     let successCount = 0;
 
@@ -45,6 +46,8 @@ export default function OrderConfirmationModal({
         leverage: leverage,
         takeProfit: orderConfig.takeProfitEnabled ? (orderConfig.perCoinTP?.[pair] || orderConfig.takeProfit) : null,
         stopLoss: orderConfig.stopLossEnabled ? (orderConfig.perCoinSL?.[pair] || orderConfig.stopLoss) : null,
+        tpMode: orderConfig.takeProfitMode,
+        slMode: orderConfig.stopLossMode,
         marketType: 'Futures'
       };
 
@@ -63,21 +66,33 @@ export default function OrderConfirmationModal({
 
     setExecuting(false);
 
-    // Always call onSuccess if at least one order worked to refresh lists
-    if (successCount > 0 && onSuccess) {
-      onSuccess();
-    }
-
+    // Final Notification Logic
     if (successCount === orderConfig.pairs.length) {
-      toast({ title: 'Success', description: `All ${successCount} orders placed successfully` });
+      toast({
+        title: 'Success',
+        description: `All ${successCount} orders placed successfully.`,
+        className: "bg-emerald-900 border-custom text-white"
+      });
+      if (onSuccess) onSuccess();
       onClose();
-    } else {
+    } else if (successCount > 0) {
       toast({
         variant: 'destructive',
-        title: 'Execution Complete',
-        description: `${successCount}/${orderConfig.pairs.length} orders successful. Check errors.`
+        title: 'Partial Success',
+        description: `${successCount}/${orderConfig.pairs.length} orders successful. Check individual pair errors.`
       });
-      // Don't auto-close on error so user can see status
+      if (onSuccess) onSuccess();
+    } else {
+      const isNetworkError = Object.values(status).some(s => s === 'error') &&
+        Object.keys(status).some(k => k.endsWith('_error') && status[k]?.includes('Network failure'));
+
+      toast({
+        variant: 'destructive',
+        title: 'Execution Failed',
+        description: isNetworkError
+          ? 'Network failure: Could not reach exchange. Please check your internet or proxy settings.'
+          : `All ${orderConfig.pairs.length} orders failed. See details in the table.`
+      });
     }
   };
 
@@ -151,26 +166,46 @@ export default function OrderConfirmationModal({
                         <td className="px-3 py-2 text-right text-white">
                           {orderConfig.takeProfitEnabled ? (
                             <span className="text-[#00FF41]">
-                              {orderConfig.takeProfitMode === 'PRICE' ? `$${(orderConfig.perCoinTP?.[pair]?.price || orderConfig.takeProfit.price).toFixed(2)}` :
-                                orderConfig.takeProfitMode === 'PERCENT' ? `${(orderConfig.perCoinTP?.[pair]?.percent || orderConfig.takeProfit.percent)}%` :
-                                  `$${(orderConfig.perCoinTP?.[pair]?.profit || orderConfig.takeProfit.profit)}`}
+                              {orderConfig.takeProfitMode === 'PRICE' && (
+                                `$${(orderConfig.applyTPToAll ? orderConfig.takeProfit.price : (orderConfig.perCoinTP?.[pair]?.price || orderConfig.takeProfit.price)).toFixed(2)}`
+                              )}
+                              {orderConfig.takeProfitMode === 'PERCENT' && (
+                                `${(orderConfig.applyTPToAll ? orderConfig.takeProfit.percent : (orderConfig.perCoinTP?.[pair]?.percent || orderConfig.takeProfit.percent))}%`
+                              )}
+                              {orderConfig.takeProfitMode === 'PROFIT' && (
+                                `$${(orderConfig.applyTPToAll ? orderConfig.takeProfit.profit : (orderConfig.perCoinTP?.[pair]?.profit || orderConfig.takeProfit.profit))}`
+                              )}
                             </span>
                           ) : '-'}
                         </td>
                         <td className="px-3 py-2 text-right text-white">
                           {orderConfig.stopLossEnabled ? (
                             <span className="text-[#FF3B30]">
-                              {orderConfig.stopLossMode === 'PRICE' ? `$${(orderConfig.perCoinSL?.[pair]?.price || orderConfig.stopLoss.price).toFixed(2)}` :
-                                orderConfig.stopLossMode === 'PERCENT' ? `${(orderConfig.perCoinSL?.[pair]?.percent || orderConfig.stopLoss.percent)}%` :
-                                  `$${(orderConfig.perCoinSL?.[pair]?.loss || orderConfig.stopLoss.loss)}`}
+                              {orderConfig.stopLossMode === 'PRICE' && (
+                                `$${(orderConfig.applySLToAll ? orderConfig.stopLoss.price : (orderConfig.perCoinSL?.[pair]?.price || orderConfig.stopLoss.price)).toFixed(2)}`
+                              )}
+                              {orderConfig.stopLossMode === 'PERCENT' && (
+                                `${(orderConfig.applySLToAll ? orderConfig.stopLoss.percent : (orderConfig.perCoinSL?.[pair]?.percent || orderConfig.stopLoss.percent))}%`
+                              )}
+                              {orderConfig.stopLossMode === 'LOSS' && (
+                                `$${(orderConfig.applySLToAll ? orderConfig.stopLoss.loss : (orderConfig.perCoinSL?.[pair]?.loss || orderConfig.stopLoss.loss))}`
+                              )}
                             </span>
                           ) : '-'}
                         </td>
                         <td className="px-3 py-2 text-right">
                           <div className="flex justify-end">
-                            <div className="h-4 w-4 rounded-full border-2 border-red-500 flex items-center justify-center">
-                              <div className="h-2 w-2 rounded-full bg-red-500"></div>
-                            </div>
+                            {!status && <div className="h-2 w-2 rounded-full bg-slate-700 animate-pulse"></div>}
+                            {status === 'pending' && <Loader2 className="h-3 w-3 text-[#00D9FF] animate-spin" />}
+                            {status === 'success' && <CheckCircle className="h-4 w-4 text-[#00FF41]" />}
+                            {status === 'error' && (
+                              <div className="flex flex-col items-end">
+                                <XCircle className="h-4 w-4 text-[#FF3B30]" />
+                                <span className="text-[10px] text-[#FF3B30] mt-1 max-w-[100px] truncate" title={executionStatus[`${pair}_error`]}>
+                                  {executionStatus[`${pair}_error`]}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>

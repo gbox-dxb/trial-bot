@@ -4,8 +4,8 @@
  * Centralized settings for easy modification.
  */
 
-export const CORS_PROXY = 'https://app-cors.vercel.app/api/proxy?url=';
-export const USE_PROXY = false;
+export const CORS_PROXY = 'https://corsproxy.io/?';
+export const USE_PROXY = true;
 
 export const BASE_URLS = {
     binance: {

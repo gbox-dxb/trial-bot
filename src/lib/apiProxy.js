@@ -80,16 +80,31 @@ const executeSimulatedBackendRequest = async (exchange, endpoint, method, params
       headers: requestHeaders
     });
 
-    const data = await response.json();
+    let data;
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.indexOf("application/json") !== -1) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      data = { message: text || `HTTP Error ${response.status}` };
+    }
 
     if (!response.ok) {
-      const errorMessage = data.msg || data.message || (data.code ? `API Error ${data.code}` : 'Unknown API Error');
+      // Check if proxy itself is failing
+      if (response.status === 503 || response.status === 504) {
+        throw new Error(`Proxy Service Unavailable: The CORS proxy is currently overloaded. Please try again or switch proxies in config.js.`);
+      }
+
+      const errorMessage = data.msg || data.message || (data.code ? `API Error ${data.code}` : `HTTP Error ${response.status}`);
       throw new Error(errorMessage);
     }
 
     return data;
   } catch (error) {
-    // Better error handling for network failures
+    if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+      console.error('Network Error (likely CORS or Offline):', error);
+      throw new Error('Network failure: Connection blocked by CORS or no internet.');
+    }
     console.error('Proxy Request Failed:', error);
     throw error;
   }

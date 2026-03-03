@@ -21,30 +21,30 @@ export const orderPlacementService = {
       if (!currentPrice || currentPrice <= 0) {
         // Attempt to fallback to override price, otherwise fail
         if (overrides.price && overrides.price > 0) {
-            currentPrice = overrides.price;
+          currentPrice = overrides.price;
         } else {
-            throw new Error("Valid market price is required for order placement");
+          throw new Error("Valid market price is required for order placement");
         }
       }
 
       const { config } = template;
-      
+
       // Determine Price (Override > Argument > Template Config)
       const price = overrides.price || currentPrice;
 
       // Determine Direction
       const direction = overrides.direction || config.direction || 'Long';
-      
+
       // Determine Size
       let size = config.baseOrderSize || 100;
       if (overrides.size) size = overrides.size;
-      
+
       // Leverage
       const leverage = overrides.leverage || config.leverage || 1;
 
       // Pair
       const pair = overrides.pair || (template.selectedCoins && template.selectedCoins[0]) || config.pair || 'BTCUSDT';
-      
+
       // Normalized Side
       const side = (direction === 'Long' || direction === 'BUY' || direction === 'LONG') ? 'LONG' : 'SHORT';
 
@@ -53,30 +53,32 @@ export const orderPlacementService = {
         status: 'ACTIVE',
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        
+
         // Metadata
         templateId: template.id,
         templateName: template.name,
         source: source, // 'manual' or 'bot'
         botId: botId,
         botName: botName,
-        
+
         // Trade Details
         pair: pair,
         symbol: pair, // Alias for compatibility
         type: overrides.type || config.orderType || 'MARKET',
         side: side,
         direction: side, // specific to this app's logic often using 'direction'
-        
+
         entryPrice: price,
         size: size, // Margin Amount
         leverage: leverage,
         quantity: (size * leverage) / price, // Total Position Size in Coins
         margin: size,
-        
+
         // Risk Management (Template Config)
         tp: config.takeProfitEnabled ? config.takeProfit : null,
         sl: config.stopLossEnabled ? config.stopLoss : null,
+        tpMode: config.takeProfitMode,
+        slMode: config.stopLossMode,
       };
 
       storage.saveActiveOrder(order);
@@ -102,7 +104,7 @@ export const orderPlacementService = {
     // Fallback logic for existing orders
     if (order.botId) return `Bot: ${order.botName || 'Trading Bot'}`;
     if (order.templateName) return `Template: ${order.templateName}`;
-    
+
     return 'Manual Terminal';
   }
 };

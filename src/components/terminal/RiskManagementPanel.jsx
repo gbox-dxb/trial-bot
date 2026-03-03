@@ -9,27 +9,27 @@ export default function RiskManagementPanel({
   onTakeProfitEnabledChange,
   stopLossEnabled,
   onStopLossEnabledChange,
-  
+
   takeProfitMode,
   onTakeProfitModeChange,
   takeProfit,
   onTakeProfitChange,
-  
+
   stopLossMode,
   onStopLossModeChange,
   stopLoss,
   onStopLossChange,
-  
+
   applyTPToAll,
   onApplyTPToAllChange,
   applySLToAll,
   onApplySLToAllChange,
-  
+
   perCoinTP = {},
   onPerCoinTPChange,
   perCoinSL = {},
   onPerCoinSLChange,
-  
+
   pairs = [],
   entryPrice,
   perCoinPrice = {},
@@ -43,9 +43,9 @@ export default function RiskManagementPanel({
   const calculateTPValues = (pair) => {
     const price = perCoinPrice[pair] || entryPrice || 0;
     const tp = perCoinTP[pair] || takeProfit;
-    
+
     if (!tp || !price) return { price: 0, percent: 0, profit: 0 };
-    
+
     if (takeProfitMode === 'PRICE') {
       const percent = ((tp.price - price) / price) * 100;
       const size = perCoinSize[pair] || (orderSize / pairs.length);
@@ -53,7 +53,7 @@ export default function RiskManagementPanel({
       const profit = orderValidationUtils.calculateProfitAtPrice(price, tp.price, size, lev, perCoinDirection[pair] || direction);
       return { price: tp.price, percent, profit };
     }
-    
+
     if (takeProfitMode === 'PERCENT') {
       const tpPrice = price * (1 + tp.percent / 100);
       const size = perCoinSize[pair] || (orderSize / pairs.length);
@@ -61,7 +61,7 @@ export default function RiskManagementPanel({
       const profit = orderValidationUtils.calculateProfitAtPrice(price, tpPrice, size, lev, perCoinDirection[pair] || direction);
       return { price: tpPrice, percent: tp.percent, profit };
     }
-    
+
     // PROFIT mode
     const size = perCoinSize[pair] || (orderSize / pairs.length);
     const lev = perCoinLeverage[pair] || leverage;
@@ -69,13 +69,13 @@ export default function RiskManagementPanel({
     const tpPrice = price * (1 + percent / 100);
     return { price: tpPrice, percent, profit: tp.profit };
   };
-  
+
   const calculateSLValues = (pair) => {
     const price = perCoinPrice[pair] || entryPrice || 0;
     const sl = perCoinSL[pair] || stopLoss;
-    
+
     if (!sl || !price) return { price: 0, percent: 0, loss: 0 };
-    
+
     if (stopLossMode === 'PRICE') {
       const percent = ((sl.price - price) / price) * 100;
       const size = perCoinSize[pair] || (orderSize / pairs.length);
@@ -83,7 +83,7 @@ export default function RiskManagementPanel({
       const loss = Math.abs(orderValidationUtils.calculateProfitAtPrice(price, sl.price, size, lev, perCoinDirection[pair] || direction));
       return { price: sl.price, percent: Math.abs(percent), loss };
     }
-    
+
     if (stopLossMode === 'PERCENT') {
       const slPrice = price * (1 - sl.percent / 100);
       const size = perCoinSize[pair] || (orderSize / pairs.length);
@@ -91,7 +91,7 @@ export default function RiskManagementPanel({
       const loss = Math.abs(orderValidationUtils.calculateProfitAtPrice(price, slPrice, size, lev, perCoinDirection[pair] || direction));
       return { price: slPrice, percent: sl.percent, loss };
     }
-    
+
     // LOSS mode
     const size = perCoinSize[pair] || (orderSize / pairs.length);
     const lev = perCoinLeverage[pair] || leverage;
@@ -99,11 +99,11 @@ export default function RiskManagementPanel({
     const slPrice = price * (1 - percent / 100);
     return { price: slPrice, percent, loss: sl.loss };
   };
-  
+
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-white">Risk Management</h3>
-      
+
       {/* Take Profit Section */}
       <div className="bg-slate-900 rounded-lg p-4 border border-slate-700 space-y-3">
         <div className="flex items-center justify-between">
@@ -119,42 +119,39 @@ export default function RiskManagementPanel({
             </label>
           </div>
         </div>
-        
+
         {takeProfitEnabled && (
           <>
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => onTakeProfitModeChange('PRICE')}
-                className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
-                  takeProfitMode === 'PRICE'
-                    ? 'bg-green-500/20 border-green-500 text-green-400'
-                    : 'bg-slate-800 border-slate-700 text-gray-400'
-                }`}
+                className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${takeProfitMode === 'PRICE'
+                  ? 'bg-green-500/20 border-green-500 text-green-400'
+                  : 'bg-slate-800 border-slate-700 text-gray-400'
+                  }`}
               >
                 Price
               </button>
               <button
                 onClick={() => onTakeProfitModeChange('PERCENT')}
-                className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
-                  takeProfitMode === 'PERCENT'
-                    ? 'bg-green-500/20 border-green-500 text-green-400'
-                    : 'bg-slate-800 border-slate-700 text-gray-400'
-                }`}
+                className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${takeProfitMode === 'PERCENT'
+                  ? 'bg-green-500/20 border-green-500 text-green-400'
+                  : 'bg-slate-800 border-slate-700 text-gray-400'
+                  }`}
               >
                 Percent
               </button>
               <button
                 onClick={() => onTakeProfitModeChange('PROFIT')}
-                className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
-                  takeProfitMode === 'PROFIT'
-                    ? 'bg-green-500/20 border-green-500 text-green-400'
-                    : 'bg-slate-800 border-slate-700 text-gray-400'
-                }`}
+                className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${takeProfitMode === 'PROFIT'
+                  ? 'bg-green-500/20 border-green-500 text-green-400'
+                  : 'bg-slate-800 border-slate-700 text-gray-400'
+                  }`}
               >
                 Profit
               </button>
             </div>
-            
+
             <div>
               {takeProfitMode === 'PRICE' && (
                 <Input
@@ -187,21 +184,22 @@ export default function RiskManagementPanel({
                 />
               )}
             </div>
-            
+
             {pairs.length > 0 && entryPrice > 0 && (
               <div className="text-xs text-gray-400 space-y-1">
                 {pairs.slice(0, 1).map(pair => {
                   const values = calculateTPValues(pair);
                   return (
                     <div key={pair}>
-                      <div>Price: ${(values?.price || 0).toFixed(2)}</div>
-                      <div>+{(values?.percent || 0).toFixed(2)}% | +${(values?.profit || 0).toFixed(2)}</div>
+                      {takeProfitMode === 'PRICE' && <div>Price: ${(values?.price || 0).toFixed(2)}</div>}
+                      {takeProfitMode === 'PERCENT' && <div>+{(values?.percent || 0).toFixed(2)}%</div>}
+                      {takeProfitMode === 'PROFIT' && <div>+${(values?.profit || 0).toFixed(2)}</div>}
                     </div>
                   );
                 })}
               </div>
             )}
-            
+
             <div className="flex items-center gap-2">
               <Checkbox
                 id="tp-all"
@@ -215,7 +213,7 @@ export default function RiskManagementPanel({
           </>
         )}
       </div>
-      
+
       {/* Stop Loss Section */}
       <div className="bg-slate-900 rounded-lg p-4 border border-slate-700 space-y-3">
         <div className="flex items-center justify-between">
@@ -231,42 +229,39 @@ export default function RiskManagementPanel({
             </label>
           </div>
         </div>
-        
+
         {stopLossEnabled && (
           <>
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => onStopLossModeChange('PRICE')}
-                className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
-                  stopLossMode === 'PRICE'
-                    ? 'bg-red-500/20 border-red-500 text-red-400'
-                    : 'bg-slate-800 border-slate-700 text-gray-400'
-                }`}
+                className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${stopLossMode === 'PRICE'
+                  ? 'bg-red-500/20 border-red-500 text-red-400'
+                  : 'bg-slate-800 border-slate-700 text-gray-400'
+                  }`}
               >
                 Price
               </button>
               <button
                 onClick={() => onStopLossModeChange('PERCENT')}
-                className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
-                  stopLossMode === 'PERCENT'
-                    ? 'bg-red-500/20 border-red-500 text-red-400'
-                    : 'bg-slate-800 border-slate-700 text-gray-400'
-                }`}
+                className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${stopLossMode === 'PERCENT'
+                  ? 'bg-red-500/20 border-red-500 text-red-400'
+                  : 'bg-slate-800 border-slate-700 text-gray-400'
+                  }`}
               >
                 Percent
               </button>
               <button
                 onClick={() => onStopLossModeChange('LOSS')}
-                className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${
-                  stopLossMode === 'LOSS'
-                    ? 'bg-red-500/20 border-red-500 text-red-400'
-                    : 'bg-slate-800 border-slate-700 text-gray-400'
-                }`}
+                className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all ${stopLossMode === 'LOSS'
+                  ? 'bg-red-500/20 border-red-500 text-red-400'
+                  : 'bg-slate-800 border-slate-700 text-gray-400'
+                  }`}
               >
                 Loss
               </button>
             </div>
-            
+
             <div>
               {stopLossMode === 'PRICE' && (
                 <Input
@@ -299,21 +294,22 @@ export default function RiskManagementPanel({
                 />
               )}
             </div>
-            
+
             {pairs.length > 0 && entryPrice > 0 && (
               <div className="text-xs text-gray-400 space-y-1">
                 {pairs.slice(0, 1).map(pair => {
                   const values = calculateSLValues(pair);
                   return (
                     <div key={pair}>
-                      <div>Price: ${(values?.price || 0).toFixed(2)}</div>
-                      <div>-{(values?.percent || 0).toFixed(2)}% | -${(values?.loss || 0).toFixed(2)}</div>
+                      {stopLossMode === 'PRICE' && <div>Price: ${(values?.price || 0).toFixed(2)}</div>}
+                      {stopLossMode === 'PERCENT' && <div>-{(values?.percent || 0).toFixed(2)}%</div>}
+                      {stopLossMode === 'LOSS' && <div>-${(values?.loss || 0).toFixed(2)}</div>}
                     </div>
                   );
                 })}
               </div>
             )}
-            
+
             <div className="flex items-center gap-2">
               <Checkbox
                 id="sl-all"

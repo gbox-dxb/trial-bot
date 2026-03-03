@@ -92,18 +92,22 @@ export default function ActiveOrdersTable({ orders, prices, onEdit, onClosePosit
                 <td className="px-4 py-4">
                   <div className="flex flex-col">
                     <span className="font-mono font-medium text-slate-200">
-                      {Object.entries(order.tp).map(([key, value]) => (
-                        <span key={key}>
-                          {key}: {value}
-                        </span>
-                      ))}
+                      {order.tp ? (
+                        <>
+                          {order.tpMode === 'PRICE' && `Price: $${order.tp.price?.toFixed(2)}`}
+                          {order.tpMode === 'PERCENT' && `Percent: ${order.tp.percent}%`}
+                          {order.tpMode === 'PROFIT' && `Profit: $${order.tp.profit}`}
+                        </>
+                      ) : '-'}
                     </span>
                     <span className="text-[10px] text-slate-500">
-                      {Object.entries(order.sl).map(([key, value]) => (
-                        <span key={key}>
-                          {key}: {value}
-                        </span>
-                      ))}
+                      {order.sl ? (
+                        <>
+                          {order.slMode === 'PRICE' && `Price: $${order.sl.price?.toFixed(2)}`}
+                          {order.slMode === 'PERCENT' && `Percent: ${order.sl.percent}%`}
+                          {order.slMode === 'LOSS' && `Loss: $${order.sl.loss}`}
+                        </>
+                      ) : '-'}
                     </span>
                   </div>
                 </td>

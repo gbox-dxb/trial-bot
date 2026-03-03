@@ -59,7 +59,7 @@ export const orderRouter = {
       // Limit orders are placed -> become PENDING orders
       const isMarket = intent.orderType === 'Market';
       const status = isMarket ? 'ACTIVE' : 'PENDING';
-      
+
       const orderRecord = {
         id: uuidv4(),
         ...intent,
@@ -73,15 +73,17 @@ export const orderRouter = {
         entryPrice: intent.price,
         margin: (intent.quantity * intent.price) / intent.leverage, // Estimated
         tp: intent.takeProfit,
-        sl: intent.stopLoss
+        sl: intent.stopLoss,
+        tpMode: intent.tpMode,
+        slMode: intent.slMode
       };
-      
+
       // Save to Storage
       storage.saveOrder(orderRecord);
-      
+
       // Update Balance in local cache if needed
-      keyManagement.updateAccountDetails(userId, exchangeAccountId, { 
-         lastBalanceUpdate: Date.now() 
+      keyManagement.updateAccountDetails(userId, exchangeAccountId, {
+        lastBalanceUpdate: Date.now()
       });
 
       // Emit events

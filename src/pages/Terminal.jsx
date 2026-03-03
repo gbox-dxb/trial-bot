@@ -212,6 +212,18 @@ export default function Terminal() {
     setTimeout(() => setShowConfirmModal(true), 100);
   };
 
+  const handleTakeProfitModeChange = (mode) => {
+    setTakeProfitMode(mode);
+    setTakeProfit({ profit: 0, percent: 0, price: 0 }); // Reset global values
+    setPerCoinTP({}); // Reset per-coin values to prevent mixing
+  };
+
+  const handleStopLossModeChange = (mode) => {
+    setStopLossMode(mode);
+    setStopLoss({ loss: 0, percent: 0, price: 0 }); // Reset global values
+    setPerCoinSL({}); // Reset per-coin values to prevent mixing
+  };
+
   const handleSaveTemplate = ({ name, description, selectedCoins }) => {
     const template = {
       uid: 'DATA_TEMPLATE',
@@ -225,7 +237,13 @@ export default function Terminal() {
         sizeMode, baseOrderSize, perCoinSize,
         takeProfitEnabled, stopLossEnabled,
         takeProfitMode, stopLossMode,
-        takeProfit, stopLoss,
+        // Only save the active mode's value
+        takeProfit: {
+          [takeProfitMode.toLowerCase()]: takeProfit[takeProfitMode.toLowerCase()]
+        },
+        stopLoss: {
+          [stopLossMode.toLowerCase()]: stopLoss[stopLossMode.toLowerCase()]
+        },
         applyTPToAll, applySLToAll, perCoinTP, perCoinSL
       }
     };
@@ -287,7 +305,8 @@ export default function Terminal() {
     accountId, pairs, direction, perCoinDirection, orderType, entryPrice, perCoinPrice,
     leverage, perCoinLeverage, baseOrderSize, perCoinSize,
     takeProfitEnabled, stopLossEnabled, takeProfit, stopLoss, perCoinTP, perCoinSL,
-    takeProfitMode, stopLossMode, requiredMargin
+    takeProfitMode, stopLossMode, requiredMargin,
+    applyTPToAll, applySLToAll
   };
 
   return (
@@ -353,8 +372,8 @@ export default function Terminal() {
               requiredMargin={requiredMargin}
               takeProfitEnabled={takeProfitEnabled} setTakeProfitEnabled={setTakeProfitEnabled}
               stopLossEnabled={stopLossEnabled} setStopLossEnabled={setStopLossEnabled}
-              takeProfitMode={takeProfitMode} setTakeProfitMode={setTakeProfitMode}
-              stopLossMode={stopLossMode} setStopLossMode={setStopLossMode}
+              takeProfitMode={takeProfitMode} setTakeProfitMode={handleTakeProfitModeChange}
+              stopLossMode={stopLossMode} setStopLossMode={handleStopLossModeChange}
               takeProfit={takeProfit} setTakeProfit={setTakeProfit}
               stopLoss={stopLoss} setStopLoss={setStopLoss}
               applyTPToAll={applyTPToAll} setApplyTPToAll={setApplyTPToAll}
@@ -387,11 +406,6 @@ export default function Terminal() {
           setPairs([]);
           setLoadedTemplateId(null);
           setRefreshTrigger(prev => prev + 1); // Trigger refresh for Active Orders
-          toast({
-            title: "Orders Executed",
-            description: "Your positions have been opened successfully.",
-            className: "bg-emerald-900 border-custom text-white"
-          });
         }}
       />
 

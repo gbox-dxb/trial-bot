@@ -43,34 +43,34 @@ export default function RightSidePanel({
   onSaveTemplate,
   onSavePending,
   onPlaceOrder,
-  loadedTemplateId 
+  loadedTemplateId
 }) {
   return (
     <div className="h-full flex flex-col bg-[#1A1A1A] border border-custom shadow-2xl">
       {/* Header */}
       <div className="p-4 border-b border-custom bg-[#0F1419] flex items-center justify-between">
         <h2 className="text-white font-bold text-lg flex items-center gap-2">
-           Place Order
-           {loadedTemplateId && <Badge className="bg-[#00FF41]/20 text-[#00FF41] border border-[#00FF41]/30 text-[10px] font-bold">Template Active</Badge>}
+          Place Order
+          {loadedTemplateId && <Badge className="bg-[#00FF41]/20 text-[#00FF41] border border-[#00FF41]/30 text-[10px] font-bold">Template Active</Badge>}
         </h2>
         {pairs.length > 0 && (
-             <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-6 text-xs text-[#A0A9B8] hover:text-white hover:bg-[#252B33]"
-                onClick={() => setPairs([])}
-             >
-                <RotateCcw className="w-3 h-3 mr-1" /> Reset
-             </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 text-xs text-[#A0A9B8] hover:text-white hover:bg-[#252B33]"
+            onClick={() => setPairs([])}
+          >
+            <RotateCcw className="w-3 h-3 mr-1" /> Reset
+          </Button>
         )}
       </div>
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
-        
+
         {/* 1. Account Selection */}
         <section>
-          <ExchangeAccountSelector 
+          <ExchangeAccountSelector
             value={accountId}
             onChange={setAccountId}
             balance={availableBalance} // Passing the actual balance to selector for display
@@ -84,13 +84,13 @@ export default function RightSidePanel({
             <span className="text-[10px] font-bold text-[#A0A9B8] uppercase tracking-widest">Asset & Direction</span>
             <span className="h-px flex-1 bg-[#2A3038]"></span>
           </div>
-          
+
           <PairsMultiSelect
             accountId={accountId}
             value={pairs}
             onChange={setPairs}
           />
-          
+
           <DirectionToggle
             globalDirection={direction}
             onGlobalDirectionChange={setDirection}
@@ -188,7 +188,7 @@ export default function RightSidePanel({
             perCoinLeverage={perCoinLeverage}
           />
         </section>
-        
+
         {/* Spacer for bottom actions */}
         <div className="h-20"></div>
       </div>
@@ -196,17 +196,17 @@ export default function RightSidePanel({
       {/* Bottom Action Buttons (Fixed) */}
       <div className="p-4 border-t border-custom bg-[#0F1419]/95 space-y-3 z-10 backdrop-blur">
         <div className="grid grid-cols-2 gap-3">
-          <Button 
+          <Button
             onClick={onSaveTemplate}
-            variant="outline" 
+            variant="outline"
             className="w-full border-[#00FF41]/30 text-[#00FF41] hover:bg-[#00FF41]/10 hover:text-[#00FF41] transition-all font-bold"
-            disabled={!direction} 
+            disabled={!direction || direction === ''}
           >
             <Save className="w-4 h-4 mr-2" />
             Save Template
           </Button>
-          
-          <Button 
+
+          <Button
             onClick={onSavePending}
             className="w-full bg-[#00D9FF] hover:bg-[#00B8E0] text-[#0F1419] font-bold transition-all shadow-glow-cyan"
             disabled={pairs.length === 0}
@@ -215,16 +215,15 @@ export default function RightSidePanel({
             Pending Order
           </Button>
         </div>
-        
-        <Button 
+
+        <Button
           onClick={onPlaceOrder}
-          className={`w-full font-bold py-6 text-lg shadow-lg transition-all transform hover:scale-[1.01] ${
-            direction === 'Long' ? 'bg-[#00FF41] hover:bg-[#00E039] text-[#0F1419] shadow-glow-green' : 'bg-[#FF3B30] hover:bg-[#E6342B] text-white shadow-glow-orange'
-          }`}
+          className={`w-full font-bold py-6 text-lg shadow-lg transition-all transform hover:scale-[1.01] ${direction === 'LONG' ? 'bg-[#00FF41] hover:bg-[#00E039] text-[#0F1419] shadow-glow-green' : 'bg-[#FF3B30] hover:bg-[#E6342B] text-white shadow-glow-orange'
+            }`}
           disabled={pairs.length === 0 || !accountId}
         >
           <Send className="w-5 h-5 mr-2" />
-          {direction === 'Long' ? 'Place Long Order' : 'Place Short Order'}
+          {direction === 'LONG' ? 'Place Long Order' : 'Place Short Order'}
         </Button>
       </div>
     </div>

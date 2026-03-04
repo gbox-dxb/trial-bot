@@ -1,55 +1,49 @@
 import { TRADING_PAIRS } from './mockData';
 
 export const validateOrder = (intent, exchangeBalance, currentPrices) => {
-  const errors = [];
-  const { symbol, quantity, price, side, leverage, mode } = intent;
-  
+  const { symbol, quantity, price, leverage, mode, marketType, orderType } = intent;
+
   // 1. Symbol Validation
   if (!TRADING_PAIRS.includes(symbol)) {
     return { valid: false, error: `Invalid symbol: ${symbol}` };
   }
 
   // 2. Quantity/Step Size
-  if (parseFloat(quantity) <= 0) {
-    return { valid: false, error: 'Quantity must be positive' };
+  const quantityNum = parseFloat(quantity);
+  if (isNaN(quantityNum) || quantityNum <= 0) {
+    return { valid: false, error: "Parameter 'quantity' is invalid" };
   }
 
-  // 3. Min Notional (Simplified checks)
-  const currentPrice = currentPrices[symbol] || price || 0;
-  if (!currentPrice) {
-    // If we can't get price, we can't fully validate notional, but proceed if price is in intent
-    if (!price && intent.orderType !== 'Market') {
-      return { valid: false, error: 'Current price unavailable for validation' }; 
-    }
+  // 3. Price & Min Notional Checks
+  const currentPrice = currentPrices?.[symbol] || price || 0;
+  if (currentPrice <= 0 && orderType === 'Market') {
+    return { valid: false, error: 'Current price unavailable for validation' };
   }
 
-  const notional = parseFloat(quantity) * (price || currentPrice);
-  const minNotional = 5; // Conservative min for most exchanges (MEXC 5, Binance 10)
-  
+  const entryPrice = price || currentPrice;
+  const notional = quantityNum * entryPrice;
+  const minNotional = 5; // Conservative min for most exchanges
+
   if (notional < minNotional) {
-    return { valid: false, error: `Order value too small (${notional.toFixed(2)}). Min: ${minNotional} USDT` };
+    return { valid: false, error: `Order value too small ($${notional.toFixed(2)}). Min: ${minNotional} USDT` };
   }
 
   // 4. Leverage
-  if (intent.marketType === 'Futures') {
-    if (leverage < 1 || leverage > 125) {
-      return { valid: false, error: 'Leverage must be between 1x and 125x' };
+  if (marketType === 'Futures') {
+    if (isNaN(leverage) || leverage < 1 || leverage > 200) {
+      return { valid: false, error: 'Invalid leverage value' };
     }
   }
 
-  // 5. Balance Check (Skip for Demo to allow testing easily, or validate against demo balance)
-  if (mode === 'Live') {
-    // Assuming USDT-M Futures or Spot USDT pairs
-    const requiredBalance = intent.marketType === 'Futures' 
-      ? notional / leverage 
-      : notional;
+  // 5. Balance Check
+  const balanceToCheck = exchangeBalance || (mode === 'Live' ? 0 : 100000);
+  const requiredBalance = marketType === 'Futures' ? notional / leverage : notional;
 
-    if (exchangeBalance < requiredBalance) {
-      return { 
-        valid: false, 
-        error: `Insufficient balance. Need ${requiredBalance.toFixed(2)} USDT, Have ${exchangeBalance.toFixed(2)} USDT` 
-      };
-    }
+  if (balanceToCheck < requiredBalance) {
+    return {
+      valid: false,
+      error: 'Account has insufficient balance for requested action'
+    };
   }
 
   return { valid: true };

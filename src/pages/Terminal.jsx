@@ -306,7 +306,7 @@ export default function Terminal() {
     leverage, perCoinLeverage, baseOrderSize, perCoinSize,
     takeProfitEnabled, stopLossEnabled, takeProfit, stopLoss, perCoinTP, perCoinSL,
     takeProfitMode, stopLossMode, requiredMargin,
-    applyTPToAll, applySLToAll
+    applyTPToAll, applySLToAll, availableBalance
   };
 
   return (

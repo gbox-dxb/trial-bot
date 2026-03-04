@@ -36,15 +36,12 @@ export const orderRouter = {
     }
 
     try {
-      // 3. Get Balance (for validation)
-      const balanceData = await connector.getBalance(credentials);
-      const availableBalance = balanceData.USDT.available;
+      // 3. Robust Side Mapping (Safety layer)
+      const rawSide = (intent.side || intent.direction || 'BUY').toString().toUpperCase();
+      intent.side = (rawSide === 'LONG' || rawSide === 'BUY') ? 'BUY' : 'SELL';
 
-      // 4. Validate
-      const validation = validateOrder(intent, availableBalance, currentPrices);
-      if (!validation.valid) {
-        return { success: false, error: validation.error };
-      }
+      // 4. Mode Injection
+      if (!intent.mode) intent.mode = credentials.mode;
 
       // 5. Set Leverage (Futures only)
       if (credentials.marketType === 'Futures' && intent.leverage) {

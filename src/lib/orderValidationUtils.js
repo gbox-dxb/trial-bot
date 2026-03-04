@@ -73,14 +73,17 @@ export const orderValidationUtils = {
       const size = config.perCoinSize?.[pair] || (config.baseOrderSize / config.pairs.length);
       const leverage = config.perCoinLeverage?.[pair] || config.leverage || 1;
 
-      total += size / leverage;
+      if (price > 0 && leverage > 0) {
+        total += size / leverage;
+      }
     });
 
     return total;
   },
 
   calculateLiquidationPrice(entryPrice, leverage, direction) {
-    if (direction === 'LONG') {
+    const dir = this.normalizeSide(direction);
+    if (dir === 'BUY') {
       return entryPrice - (entryPrice / leverage);
     } else {
       return entryPrice + (entryPrice / leverage);
@@ -88,7 +91,94 @@ export const orderValidationUtils = {
   },
 
   calculateProfitAtPrice(entryPrice, exitPrice, size, leverage, direction) {
-    const priceDiff = direction === 'LONG' ? (exitPrice - entryPrice) : (entryPrice - exitPrice);
+    const dir = this.normalizeSide(direction);
+    const priceDiff = dir === 'BUY' ? (exitPrice - entryPrice) : (entryPrice - exitPrice);
     return (priceDiff / entryPrice) * size * leverage;
+  },
+
+  /**
+   * Robust Side Normalization
+   * Maps UI values (Long, Short, BUY, SELL etc) to exchange standard BUY/SELL
+   */
+  normalizeSide(side) {
+    if (!side) return 'BUY';
+    const s = side.toString().toUpperCase();
+    if (s === 'LONG' || s === 'BUY') return 'BUY';
+    if (s === 'SHORT' || s === 'SELL') return 'SELL';
+    return 'BUY'; // Default fallback
+  },
+
+  /**
+   * Get symbol precision rules
+   * In a real app this might come from exchange info, here we use defaults
+   */
+  getQuantityPrecision(symbol) {
+    // High-value assets usually have lower decimal precision for quantity
+    if (symbol === 'BTCUSDT') return 3;
+    if (symbol === 'ETHUSDT') return 3;
+    if (symbol === 'SOLUSDT') return 2;
+    // Lower value assets might have more
+    return 3;
+  },
+
+  /**
+   * Safely format quantity based on precision rules
+   */
+  formatQuantity(quantity, symbol) {
+    if (isNaN(quantity) || !isFinite(quantity) || quantity <= 0) return 0;
+    const precision = this.getQuantityPrecision(symbol);
+
+    // Use floor to be safe on margin/notional requirements
+    const factor = Math.pow(10, precision);
+    return Math.floor(quantity * factor) / factor;
+  },
+
+  /**
+   * Single order validation intent
+   * Returns { valid: boolean, error: string }
+   */
+  validateOrderIntent(intent, runningBalance, currentPrices) {
+    const { symbol, side, quantity, price, leverage, orderType } = intent;
+
+    // 1. Basic Side Check
+    const normalizedSide = this.normalizeSide(side);
+    if (!['BUY', 'SELL'].includes(normalizedSide)) {
+      return { valid: false, error: 'Invalid side mapping' };
+    }
+
+    // 2. Quantity Checks
+    if (isNaN(quantity) || quantity <= 0) {
+      return { valid: false, error: 'Parameter quantity is invalid' };
+    }
+
+    // 3. Leverage Checks
+    if (isNaN(leverage) || leverage <= 0) {
+      return { valid: false, error: 'Leverage must be greater than 0' };
+    }
+
+    // 4. Price/Notional
+    const currentPrice = currentPrices[symbol] || price || 0;
+    if (currentPrice <= 0 && orderType === 'Market') {
+      return { valid: false, error: 'Price unavailable' };
+    }
+
+    const entryPrice = price || currentPrice;
+    const notional = quantity * entryPrice;
+    const minNotional = 5.0; // Exchange min
+
+    if (notional < minNotional) {
+      return { valid: false, error: `Order too small ($${notional.toFixed(2)}). Min $${minNotional}` };
+    }
+
+    // 5. Margin vs Local Running Balance
+    const margin = notional / leverage;
+    // Buffer for fees/slippage (optional but safer)
+    const requiredTotal = margin * 1.001;
+
+    if (runningBalance < requiredTotal) {
+      return { valid: false, error: 'Account has insufficient balance for requested action' };
+    }
+
+    return { valid: true };
   }
 };

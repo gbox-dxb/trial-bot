@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { orderRouter } from '@/lib/orderRouter';
+import { orderValidationUtils } from '@/lib/orderValidationUtils';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -18,7 +19,7 @@ export default function OrderConfirmationModal({
 
   const handleConfirm = async () => {
     setExecuting(true);
-    setExecutionStatus({}); // Reset previous status
+    setExecutionStatus({});
     const status = {};
     let successCount = 0;
 
@@ -26,59 +27,59 @@ export default function OrderConfirmationModal({
       status[pair] = 'pending';
       setExecutionStatus({ ...status });
 
-      // Map direction to side for exchange
-      const direction = (orderConfig.perCoinDirection?.[pair] || orderConfig.direction).toUpperCase();
-      const side = (direction === 'LONG' || direction === 'BUY') ? 'BUY' : 'SELL';
+      try {
+        // 1. Extract and Normalize (Defensive)
+        const uiDirection = (orderConfig.perCoinDirection?.[pair] || orderConfig.direction || 'LONG').toString().toUpperCase();
+        // Standard mapping: LONG/BUY -> BUY, SHORT/SELL -> SELL
+        const side = (uiDirection === 'LONG' || uiDirection === 'BUY') ? 'BUY' : 'SELL';
 
-      const leverage = orderConfig.perCoinLeverage?.[pair] || orderConfig.leverage;
-      const sizeUSDT = orderConfig.perCoinSize?.[pair] || (orderConfig.baseOrderSize / orderConfig.pairs.length);
-      const entryPrice = orderConfig.perCoinPrice?.[pair] || orderConfig.entryPrice || prices[pair] || 0;
+        const leverage = parseFloat(orderConfig.perCoinLeverage?.[pair] || orderConfig.leverage) || 1;
+        const sizeUSDT = parseFloat(orderConfig.perCoinSize?.[pair] || (orderConfig.baseOrderSize / orderConfig.pairs.length)) || 0;
+        const entryPrice = parseFloat(orderConfig.perCoinPrice?.[pair] || orderConfig.entryPrice || prices[pair] || 0);
 
-      // Defensive check for calculation variables
-      if (!entryPrice || entryPrice <= 0 || !sizeUSDT || !leverage) {
+        // 2. Format Quantity (Critical for Exchange)
+        const rawQuantity = entryPrice > 0 ? (sizeUSDT) / entryPrice : 0;
+        const quantity = orderValidationUtils.formatQuantity(rawQuantity, pair);
+
+        // 3. Construct Order Intent
+        const intent = {
+          userId: 'user-1',
+          exchangeAccountId: orderConfig.accountId,
+          symbol: pair,
+          side: side,
+          direction: uiDirection, // Keep original for UI display
+          orderType: orderConfig.orderType || 'Market',
+          quantity: quantity,
+          price: entryPrice,
+          leverage: leverage,
+          takeProfit: orderConfig.takeProfitEnabled ? (orderConfig.perCoinTP?.[pair] || orderConfig.takeProfit) : null,
+          stopLoss: orderConfig.stopLossEnabled ? (orderConfig.perCoinSL?.[pair] || orderConfig.stopLoss) : null,
+          tpMode: orderConfig.takeProfitMode,
+          slMode: orderConfig.stopLossMode,
+          marketType: 'Futures'
+        };
+
+        // 4. Basic Safety Guard
+        if (quantity <= 0 || isNaN(quantity)) {
+          throw new Error('Invalid Qty (Check Price/Size)');
+        }
+        if (leverage < 1 || isNaN(leverage)) {
+          throw new Error('Invalid Leverage');
+        }
+
+        // 5. Execute
+        const result = await orderRouter.executeOrder(intent, prices);
+
+        if (result.success) {
+          successCount++;
+          status[pair] = 'success';
+        } else {
+          status[pair] = 'error';
+          status[`${pair}_error`] = result.error || 'Execution failed';
+        }
+      } catch (error) {
         status[pair] = 'error';
-        status[`${pair}_error`] = !entryPrice || entryPrice <= 0 ? 'Invalid price' : 'Invalid size/lev';
-        setExecutionStatus({ ...status });
-        continue;
-      }
-
-      // Calculate quantity with strict rounding (standard for most exchanges)
-      const rawQuantity = (sizeUSDT * leverage) / entryPrice;
-      const quantity = Number(rawQuantity.toFixed(3));
-
-      // Final validation before execution
-      if (isNaN(quantity) || quantity <= 0) {
-        status[pair] = 'error';
-        status[`${pair}_error`] = 'Invalid quantity';
-        setExecutionStatus({ ...status });
-        continue;
-      }
-
-      const intent = {
-        userId: 'user-1',
-        exchangeAccountId: orderConfig.accountId,
-        symbol: pair,
-        side: side, // Mapped for exchange
-        direction: direction, // Preserved for UI records
-        orderType: orderConfig.orderType,
-        quantity: quantity,
-        price: entryPrice,
-        leverage: leverage,
-        takeProfit: orderConfig.takeProfitEnabled ? (orderConfig.perCoinTP?.[pair] || orderConfig.takeProfit) : null,
-        stopLoss: orderConfig.stopLossEnabled ? (orderConfig.perCoinSL?.[pair] || orderConfig.stopLoss) : null,
-        tpMode: orderConfig.takeProfitMode,
-        slMode: orderConfig.stopLossMode,
-        marketType: 'Futures'
-      };
-
-      // Execute via Router - Router handles storage saving
-      const result = await orderRouter.executeOrder(intent, prices);
-
-      status[pair] = result.success ? 'success' : 'error';
-      status[`${pair}_error`] = result.error;
-
-      if (result.success) {
-        successCount++;
+        status[`${pair}_error`] = error.message || 'System error';
       }
 
       setExecutionStatus({ ...status });
@@ -86,7 +87,7 @@ export default function OrderConfirmationModal({
 
     setExecuting(false);
 
-    // Final Notification Logic
+    // Final Notification
     if (successCount === orderConfig.pairs.length) {
       toast({
         title: 'Success',
@@ -99,19 +100,14 @@ export default function OrderConfirmationModal({
       toast({
         variant: 'destructive',
         title: 'Partial Success',
-        description: `${successCount}/${orderConfig.pairs.length} orders successful. Check individual pair errors.`
+        description: `${successCount}/${orderConfig.pairs.length} orders successful.`
       });
       if (onSuccess) onSuccess();
     } else {
-      const isNetworkError = Object.values(status).some(s => s === 'error') &&
-        Object.keys(status).some(k => k.endsWith('_error') && status[k]?.includes('Network failure'));
-
       toast({
         variant: 'destructive',
         title: 'Execution Failed',
-        description: isNetworkError
-          ? 'Network failure: Could not reach exchange. Please check your internet or proxy settings.'
-          : `All ${orderConfig.pairs.length} orders failed. See details in the table.`
+        description: `Failed to place orders. See details in table.`
       });
     }
   };

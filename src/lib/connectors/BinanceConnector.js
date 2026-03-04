@@ -59,6 +59,11 @@ export const BinanceConnector = {
       // timestamp is added by proxy
     };
 
+    // Support Hedge Mode if configured
+    if (isFutures && credentials.positionMode === 'Hedge' && intent.positionSide) {
+      params.positionSide = intent.positionSide.toUpperCase();
+    }
+
     if (intent.orderType === 'LIMIT') {
       params.price = intent.price;
       params.timeInForce = 'GTC';
@@ -82,6 +87,20 @@ export const BinanceConnector = {
       symbol,
       leverage
     }, {}, credentials);
+  },
+
+  async setMarginMode(symbol, mode, credentials) {
+    if (credentials.marketType !== 'Futures') return;
+    try {
+      const marginType = mode.toUpperCase() === 'ISOLATED' ? 'ISOLATED' : 'CROSSED';
+      await apiProxy.request('binance', '/fapi/v1/marginType', 'POST', {
+        symbol,
+        marginType
+      }, {}, credentials);
+    } catch (e) {
+      // Binance often fails if already set to that mode
+      console.warn('Binance setMarginMode failed:', e.message);
+    }
   },
 
   async getOpenPositions(credentials) {
@@ -113,6 +132,32 @@ export const BinanceConnector = {
       symbol,
       orderId
     }, {}, credentials);
+  },
+
+  async getSymbolInfo(symbol, credentials) {
+    const isFutures = credentials.marketType === 'Futures';
+    if (!isFutures) return null; // Simplified for now
+
+    try {
+      const data = await apiProxy.request('binance', '/fapi/v1/exchangeInfo', 'GET', {}, {}, credentials);
+      const symbolData = data.symbols.find(s => s.symbol === symbol);
+      if (!symbolData) return null;
+
+      const lotSize = symbolData.filters.find(f => f.filterType === 'LOT_SIZE');
+      const minNotional = symbolData.filters.find(f => f.filterType === 'MIN_NOTIONAL');
+      const priceFilter = symbolData.filters.find(f => f.filterType === 'PRICE_FILTER');
+
+      return {
+        minQty: parseFloat(lotSize?.minQty || 0),
+        stepSize: parseFloat(lotSize?.stepSize || 0),
+        minNotional: parseFloat(minNotional?.minNotional || 0),
+        tickSize: parseFloat(priceFilter?.tickSize || 0),
+        maxLeverage: symbolData.leverage || 125 // Note: Some symbols have lower max leverage
+      };
+    } catch (e) {
+      console.error('Failed to fetch Binance symbol info:', e);
+      return null;
+    }
   },
 
   async placeTpSlOrders() { return null; },

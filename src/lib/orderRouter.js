@@ -40,12 +40,61 @@ export const orderRouter = {
       const rawSide = (intent.side || intent.direction || 'BUY').toString().toUpperCase();
       intent.side = (rawSide === 'LONG' || rawSide === 'BUY') ? 'BUY' : 'SELL';
 
+      // Hedge Mode Side Support
+      if (!intent.positionSide && intent.marketType === 'Futures') {
+        intent.positionSide = (rawSide === 'LONG' || rawSide === 'BUY') ? 'LONG' : 'SHORT';
+      }
+
       // 4. Mode Injection
       if (!intent.mode) intent.mode = credentials.mode;
 
-      // 5. Set Leverage (Futures only)
-      if (credentials.marketType === 'Futures' && intent.leverage) {
-        await connector.setLeverage(intent.symbol, intent.leverage, credentials);
+      // 5. Account Setup (Futures only)
+      let symbolInfo = null;
+      if (credentials.marketType === 'Futures') {
+        const marginMode = credentials.marginMode || 'CROSS';
+
+        // A. Fetch Symbol Constraints (Selective Failure Fix)
+        if (connector.getSymbolInfo) {
+          symbolInfo = await connector.getSymbolInfo(intent.symbol, credentials);
+        }
+
+        // B. Instrumentation (Per User Request)
+        console.log(`[OrderRouter] Symbol Constraints for ${intent.symbol}:`, symbolInfo);
+
+        // C. Auto-Adjustment (Min Qty & Notional)
+        if (symbolInfo) {
+          // Adjust for stepSize and minQty
+          intent.quantity = orderValidationUtils.formatQuantity(intent.quantity, intent.symbol, symbolInfo);
+
+          // Adjust for minNotional
+          intent.quantity = orderValidationUtils.adjustToMinNotional(
+            intent.quantity,
+            intent.price,
+            symbolInfo.minNotional,
+            symbolInfo.stepSize
+          );
+        }
+
+        // D. Ensure Margin Mode
+        if (connector.setMarginMode) {
+          await connector.setMarginMode(intent.symbol, marginMode, credentials);
+        }
+
+        // E. Ensure Leverage
+        if (intent.leverage) {
+          await connector.setLeverage(intent.symbol, intent.leverage, credentials);
+        }
+
+        // F. Final Payload Log
+        console.log('[OrderRouter] Final Order Payload:', JSON.stringify({
+          symbol: intent.symbol,
+          side: intent.side,
+          positionSide: intent.positionSide,
+          quantity: intent.quantity,
+          leverage: intent.leverage,
+          notional: (intent.quantity * intent.price).toFixed(2),
+          requiredMargin: (intent.quantity * intent.price / intent.leverage).toFixed(2)
+        }, null, 2));
       }
 
       // 6. Place Order

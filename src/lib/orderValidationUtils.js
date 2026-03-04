@@ -122,15 +122,39 @@ export const orderValidationUtils = {
   },
 
   /**
-   * Safely format quantity based on precision rules
+   * Safely format quantity based on exchange rules
    */
-  formatQuantity(quantity, symbol) {
+  formatQuantity(quantity, symbol, symbolInfo = null) {
     if (isNaN(quantity) || !isFinite(quantity) || quantity <= 0) return 0;
-    const precision = this.getQuantityPrecision(symbol);
 
-    // Use floor to be safe on margin/notional requirements
-    const factor = Math.pow(10, precision);
-    return Math.floor(quantity * factor) / factor;
+    // Use symbolInfo if available, otherwise fallback to defaults
+    const precision = symbolInfo ? Math.max(0, -Math.log10(symbolInfo.stepSize)) : this.getQuantityPrecision(symbol);
+    const stepSize = symbolInfo?.stepSize || Math.pow(10, -precision);
+    const minQty = symbolInfo?.minQty || stepSize;
+
+    // 1. Ensure >= minQty
+    let q = Math.max(quantity, minQty);
+
+    // 2. Respect Step Size (Rounding down to be safe)
+    const steps = Math.floor(q / stepSize);
+    q = steps * stepSize;
+
+    // 3. Precision rounding for floating point safety
+    return parseFloat(q.toFixed(8));
+  },
+
+  /**
+   * Adjust quantity upward if notional value is below minNotional
+   */
+  adjustToMinNotional(quantity, price, minNotional, stepSize) {
+    if (!minNotional || minNotional <= 0) return quantity;
+
+    let currentNotional = quantity * price;
+    if (currentNotional >= minNotional) return quantity;
+
+    // Adjust upward
+    let adjustedQty = Math.ceil(minNotional / price / stepSize) * stepSize;
+    return parseFloat(adjustedQty.toFixed(8));
   },
 
   /**

@@ -66,6 +66,17 @@ export const MexcConnector = {
       quantity: intent.quantity,
     };
 
+    // Support Hedge Mode if configured
+    if (isFutures && credentials.positionMode === 'Hedge' && intent.positionSide) {
+      params.positionSide = intent.positionSide.toUpperCase();
+    }
+
+    // MEXC Futures: openType is required (1: Isolated, 2: Cross)
+    if (isFutures) {
+      const mode = (credentials.marginMode || 'CROSS').toUpperCase();
+      params.openType = mode === 'ISOLATED' ? 1 : 2;
+    }
+
     if (intent.orderType === 'LIMIT') {
       params.price = intent.price;
     }
@@ -89,6 +100,20 @@ export const MexcConnector = {
         symbol,
         leverage
       }, {}, credentials);
+    }
+  },
+
+  async setMarginMode(symbol, mode, credentials) {
+    if (credentials.marketType !== 'Futures') return;
+    try {
+      const marginMode = mode.toUpperCase() === 'ISOLATED' ? 'ISOLATED' : 'CROSS';
+      await apiProxy.request('mexc', '/api/v1/private/position/change_margin_mode', 'POST', {
+        symbol,
+        marginMode
+      }, {}, credentials);
+    } catch (e) {
+      // Ignore "already in this mode" errors if possible, or just log
+      console.warn('MEXC setMarginMode failed:', e.message);
     }
   },
 
@@ -131,6 +156,31 @@ export const MexcConnector = {
 
   async closePosition(symbol, credentials) {
     return null;
+  },
+
+  async getSymbolInfo(symbol, credentials) {
+    const isFutures = credentials.marketType === 'Futures';
+    if (!isFutures) return null;
+
+    try {
+      // MEXC Futures symbol info
+      const data = await apiProxy.request('mexc', '/api/v1/contract/detail', 'GET', { symbol }, {}, credentials);
+      const s = data.data; // MEXC returns specific symbol data if param provided
+
+      if (!s) return null;
+
+      return {
+        minQty: parseFloat(s.minVol || 0),
+        stepSize: parseFloat(s.lotSize || 0),
+        minNotional: 5.0, // MEXC usually has a $5 min or similar
+        tickSize: parseFloat(s.priceUnit || 0),
+        maxLeverage: s.maxLeverage || 200,
+        contractSize: s.contractSize || 1
+      };
+    } catch (e) {
+      console.error('Failed to fetch MEXC symbol info:', e);
+      return null;
+    }
   },
 
   async placeTpSlOrders() { return null; }

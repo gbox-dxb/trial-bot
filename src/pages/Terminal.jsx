@@ -104,12 +104,14 @@ export default function Terminal() {
         setLeverage(leverageRange.max);
       }
     }
-  }, [accountId, leverage]);
+  }, [accountId, leverage, availableBalance]);
 
   // Auto-update entry price for market orders
   useEffect(() => {
     if (orderType === 'Market' && pairs.length > 0) {
-      setEntryPrice(prices[pairs[0]] || 0);
+      // FIX 1: Use the first pair's price or fallback to 0
+      const firstPairPrice = pairs[0] && prices[pairs[0]] ? prices[pairs[0]] : 0;
+      setEntryPrice(firstPairPrice);
     }
   }, [orderType, pairs, prices]);
 
@@ -169,8 +171,40 @@ export default function Terminal() {
     if (config.stopLossEnabled !== undefined) setStopLossEnabled(config.stopLossEnabled);
     if (config.takeProfitMode) setTakeProfitMode(config.takeProfitMode);
     if (config.stopLossMode) setStopLossMode(config.stopLossMode);
-    if (config.takeProfit) setTakeProfit(config.takeProfit);
-    if (config.stopLoss) setStopLoss(config.stopLoss);
+
+    // FIX 2: Handle takeProfit/stopLoss structure properly when loading templates
+    if (config.takeProfit) {
+      if (typeof config.takeProfit === 'object') {
+        setTakeProfit({
+          profit: config.takeProfit.profit || 0,
+          percent: config.takeProfit.percent || 0,
+          price: config.takeProfit.price || 0
+        });
+      } else {
+        // Legacy format - assume it's the value for current mode
+        setTakeProfit(prev => ({
+          ...prev,
+          [config.takeProfitMode?.toLowerCase() || 'profit']: config.takeProfit
+        }));
+      }
+    }
+
+    if (config.stopLoss) {
+      if (typeof config.stopLoss === 'object') {
+        setStopLoss({
+          loss: config.stopLoss.loss || 0,
+          percent: config.stopLoss.percent || 0,
+          price: config.stopLoss.price || 0
+        });
+      } else {
+        // Legacy format
+        setStopLoss(prev => ({
+          ...prev,
+          [config.stopLossMode?.toLowerCase() || 'loss']: config.stopLoss
+        }));
+      }
+    }
+
     if (config.applyTPToAll !== undefined) setApplyTPToAll(config.applyTPToAll);
     if (config.applySLToAll !== undefined) setApplySLToAll(config.applySLToAll);
     if (config.perCoinTP) setPerCoinTP(config.perCoinTP);
@@ -214,14 +248,32 @@ export default function Terminal() {
 
   const handleTakeProfitModeChange = (mode) => {
     setTakeProfitMode(mode);
-    setTakeProfit({ profit: 0, percent: 0, price: 0 }); // Reset global values
-    setPerCoinTP({}); // Reset per-coin values to prevent mixing
+    // FIX 3: Don't reset values completely, just ensure structure exists
+    setTakeProfit(prev => ({
+      profit: mode === 'PROFIT' ? (prev.profit || 0) : 0,
+      percent: mode === 'PERCENT' ? (prev.percent || 0) : 0,
+      price: mode === 'PRICE' ? (prev.price || 0) : 0
+    }));
+    // FIX 4: Don't reset perCoinTP - preserve existing values for the new mode if they exist
+    // Only clear if we're switching modes and want to start fresh
+    if (Object.keys(perCoinTP).length > 0) {
+      // Optionally keep perCoinTP but we'll let the user override
+      // setPerCoinTP({}); // Commented out to preserve per-coin values
+    }
   };
 
   const handleStopLossModeChange = (mode) => {
     setStopLossMode(mode);
-    setStopLoss({ loss: 0, percent: 0, price: 0 }); // Reset global values
-    setPerCoinSL({}); // Reset per-coin values to prevent mixing
+    // FIX 5: Don't reset values completely, just ensure structure exists
+    setStopLoss(prev => ({
+      loss: mode === 'LOSS' ? (prev.loss || 0) : 0,
+      percent: mode === 'PERCENT' ? (prev.percent || 0) : 0,
+      price: mode === 'PRICE' ? (prev.price || 0) : 0
+    }));
+    // FIX 6: Don't reset perCoinSL
+    if (Object.keys(perCoinSL).length > 0) {
+      // setPerCoinSL({}); // Commented out to preserve per-coin values
+    }
   };
 
   const handleSaveTemplate = ({ name, description, selectedCoins }) => {
@@ -239,10 +291,14 @@ export default function Terminal() {
         takeProfitMode, stopLossMode,
         // Only save the active mode's value
         takeProfit: {
-          [takeProfitMode.toLowerCase()]: takeProfit[takeProfitMode.toLowerCase()]
+          profit: takeProfit.profit || 0,
+          percent: takeProfit.percent || 0,
+          price: takeProfit.price || 0
         },
         stopLoss: {
-          [stopLossMode.toLowerCase()]: stopLoss[stopLossMode.toLowerCase()]
+          loss: stopLoss.loss || 0,
+          percent: stopLoss.percent || 0,
+          price: stopLoss.price || 0
         },
         applyTPToAll, applySLToAll, perCoinTP, perCoinSL
       }
@@ -286,27 +342,102 @@ export default function Terminal() {
     });
   };
 
+  // FIX 7: Improve order validation to check per-coin values properly
   const handlePlaceOrder = () => {
+    // First, ensure we have all required data
+    if (!accountId) {
+      toast({ variant: 'destructive', title: 'Account Required', description: 'Please select an exchange account.' });
+      return;
+    }
+    if (pairs.length === 0) {
+      toast({ variant: 'destructive', title: 'Pairs Required', description: 'Please select at least one trading pair.' });
+      return;
+    }
+
+    // FIX 8: Ensure perCoinTP and perCoinSL have correct structure for each pair
+    const enhancedPerCoinTP = { ...perCoinTP };
+    const enhancedPerCoinSL = { ...perCoinSL };
+
+    // Initialize per-coin TP/SL for pairs that don't have them if applyToAll is false
+    if (!applyTPToAll) {
+      pairs.forEach(pair => {
+        if (!enhancedPerCoinTP[pair]) {
+          enhancedPerCoinTP[pair] = { ...takeProfit };
+        }
+      });
+    }
+
+    if (!applySLToAll) {
+      pairs.forEach(pair => {
+        if (!enhancedPerCoinSL[pair]) {
+          enhancedPerCoinSL[pair] = { ...stopLoss };
+        }
+      });
+    }
+
     const validation = orderValidationUtils.validateOrderConfig({
-      accountId, pairs, baseOrderSize, leverage, perCoinLeverage,
-      entryPrice, perCoinPrice, takeProfitEnabled, stopLossEnabled,
-      takeProfit, stopLoss, perCoinTP, perCoinSL,
-      takeProfitMode, stopLossMode
+      accountId,
+      pairs,
+      baseOrderSize,
+      leverage,
+      perCoinLeverage,
+      entryPrice,
+      perCoinPrice,
+      takeProfitEnabled,
+      stopLossEnabled,
+      takeProfit,
+      stopLoss,
+      perCoinTP: enhancedPerCoinTP,
+      perCoinSL: enhancedPerCoinSL,
+      takeProfitMode,
+      stopLossMode,
+      perCoinDirection,
+      direction
     }, availableBalance, prices);
 
     if (!validation.valid) {
-      toast({ variant: 'destructive', title: 'Validation Failed', description: validation.errors.join(', ') });
+      toast({
+        variant: 'destructive',
+        title: 'Validation Failed',
+        description: validation.errors.join(', ')
+      });
       return;
     }
     setShowConfirmModal(true);
   };
 
+  // FIX 9: Enhance orderConfig with properly structured data
   const orderConfig = {
-    accountId, pairs, direction, perCoinDirection, orderType, entryPrice, perCoinPrice,
-    leverage, perCoinLeverage, baseOrderSize, perCoinSize,
-    takeProfitEnabled, stopLossEnabled, takeProfit, stopLoss, perCoinTP, perCoinSL,
-    takeProfitMode, stopLossMode, requiredMargin,
-    applyTPToAll, applySLToAll, availableBalance
+    accountId,
+    pairs,
+    direction,
+    perCoinDirection,
+    orderType,
+    entryPrice,
+    perCoinPrice,
+    leverage,
+    perCoinLeverage,
+    baseOrderSize,
+    perCoinSize,
+    takeProfitEnabled,
+    stopLossEnabled,
+    takeProfit,
+    stopLoss,
+    // FIX 10: Ensure perCoinTP and perCoinSL have proper structure
+    perCoinTP: Object.keys(perCoinTP).length > 0 ? perCoinTP : (applyTPToAll ? {} : pairs.reduce((acc, pair) => {
+      acc[pair] = { ...takeProfit };
+      return acc;
+    }, {})),
+    perCoinSL: Object.keys(perCoinSL).length > 0 ? perCoinSL : (applySLToAll ? {} : pairs.reduce((acc, pair) => {
+      acc[pair] = { ...stopLoss };
+      return acc;
+    }, {})),
+    takeProfitMode,
+    stopLossMode,
+    requiredMargin,
+    applyTPToAll,
+    applySLToAll,
+    availableBalance
   };
 
   return (
